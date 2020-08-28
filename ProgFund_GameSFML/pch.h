@@ -2,6 +2,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#pragma warning (disable : 26495)	//'x' is uninitialized
+
 //C++ STL
 
 #include <cmath>
@@ -17,6 +19,14 @@
 #include <unordered_map>
 
 #include <memory>
+
+#include <chrono>
+
+//OpenGL
+
+#include <GLEW/glew.h>
+
+#pragma comment(lib, "GLEW/glew32s.lib")
 
 //SFML
 
@@ -44,8 +54,37 @@
 
 #endif
 
+//XNA Maths
+
+#pragma warning(push)
+#pragma warning(disable : 6011)	//dereferencing nullptr 'x'
+#pragma warning(disable : 6385)	//buffer overrun while writing to 'x'
+#pragma warning(disable : 6386)	//reading invalid data from 'x'
+
+#include <XNAMaths/xnamath.h>
+
+#pragma warning(pop)
+
 //libogg + libvorbis
 
 #pragma comment(lib, "libogg/ogg.lib")
 #pragma comment(lib, "libvorbis/vorbis.lib")
 #pragma comment(lib, "libvorbis/vorbisfile.lib")
+
+//using namespace sf;
+
+//Pointer utilities
+template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
+	if (ptr) delete ptr;
+	ptr = nullptr;
+}
+template<typename T> static constexpr inline void ptr_delete_scalar(T*& ptr) {
+	if (ptr) delete[] ptr;
+	ptr = nullptr;
+}
+template<typename T> static constexpr inline void ptr_release(T*& ptr) {
+	if (ptr) ptr->Release();
+	ptr = nullptr;
+}
+using std::shared_ptr;
+using std::weak_ptr;
