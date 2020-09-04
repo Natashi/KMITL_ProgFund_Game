@@ -43,5 +43,23 @@ enum class BlendMode : uint8_t {
 	Alpha,
 	Add,
 	Subtract,
-	RevSubtract
+	RevSubtract,
+	Invert,
 };
+
+static std::string StringFormat(const char* str, ...) {
+	va_list	vl;
+	va_start(vl, str);
+
+	//The size returned by _vsnprintf does NOT include null terminator
+	int size = _vsnprintf(nullptr, 0U, str, vl);
+	std::string res;
+	if (size > 0) {
+		res.resize(size + 1);
+		_vsnprintf((char*)res.c_str(), res.size(), str, vl);
+		res.pop_back();	//Don't include the null terminator
+	}
+
+	va_end(vl);
+	return res;
+}
