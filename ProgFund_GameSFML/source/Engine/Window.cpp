@@ -25,7 +25,7 @@ void WindowMain::Initialize() {
 	glContext_ = new sf::ContextSettings;
 	glContext_->depthBits = 24;
 
-	window_ = new sf::Window(sf::VideoMode(640, 480, 32), "Re: Mystic Square", 
+	window_ = new sf::RenderWindow(sf::VideoMode(640, 480, 32), "Re: Mystic Square",
 		sf::Style::Titlebar | sf::Style::Close, *glContext_);
 	window_->setVerticalSyncEnabled(true);
 
@@ -45,6 +45,12 @@ void WindowMain::Initialize() {
 	window_->setActive(true);
 
 	glViewport(0, 0, 640, 480);
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		GLfloat ratio = 640.0f / 480.0f;
+		glFrustum(-ratio, ratio, -1.0f, 1.0f, 1.0f, 500.f);
+	}
 
 	SetBlendMode(BlendMode::Alpha);
 
@@ -77,12 +83,41 @@ void WindowMain::Release() {
 }
 
 void WindowMain::BeginScene(GLColor clearColor) {
+	window_->pushGLStates();
+
 	glClearDepth(1.0f);
 	glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 void WindowMain::EndScene(bool bPresent) {
+	window_->popGLStates();
 	if (bPresent)
 		window_->display();
+}
+
+void WindowMain::SetBlendMode(BlendMode mode) {
+	switch (mode) {
+	case BlendMode::Add:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BlendMode::Subtract:
+		glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BlendMode::RevSubtract:
+		glBlendEquationSeparate(GL_FUNC_SUBTRACT, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BlendMode::Invert:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	case BlendMode::Alpha:
+	default:
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+	}
 }

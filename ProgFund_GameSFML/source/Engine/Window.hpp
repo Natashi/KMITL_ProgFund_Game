@@ -17,7 +17,7 @@ public:
 	void EndScene(bool bPresent = true);
 
 	sf::ContextSettings* const GetDeviceContext() { return glContext_; }
-	sf::Window* const GetWindow() { return window_; }
+	sf::RenderWindow* const GetWindow() { return window_; }
 
 	const GLuint GetBackBufferTexture() { return backBufferTexture_; }
 	const GLuint GetBackBufferDepth() { return backBufferDepth_; }
@@ -28,7 +28,7 @@ public:
 	void SetBlendMode(BlendMode mode);
 private:
 	sf::ContextSettings* glContext_;
-	sf::Window* window_;
+	sf::RenderWindow* window_;
 
 	XMMATRIX matWorld_;
 	XMMATRIX matView_;
