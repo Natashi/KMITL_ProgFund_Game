@@ -1,18 +1,32 @@
 #include "pch.h"
 
+#include "source/Engine/Input.hpp"
 #include "source/Engine/Window.hpp"
 
 int main() {
     try {
-        printf("Initializing application...");
+        printf("Initializing application...\n");
+
+        sf::Font font;
+        if (!font.loadFromFile("resources/font/GN-Kin-iro_SansSerif.ttf"))
+            throw EngineError("Failed to load font resource.\n");
+
+        sf::Text fpsCounter;
+        fpsCounter.setCharacterSize(16);
+        fpsCounter.setPosition(8.0f, 8.0f);
+        fpsCounter.setFillColor(sf::Color::White);
+        fpsCounter.setString("");
 
         WindowMain* winMain = new WindowMain();
         winMain->Initialize();
 
-        printf("Initialized application.");
+        InputManager* inputManager = new InputManager();
+        inputManager->Initialize();
+
+        printf("Initialized application.\n");
 
         {
-            sf::Window* window = winMain->GetWindow();
+            sf::RenderWindow* window = winMain->GetWindow();
 
             //Refresh rate -> 60fps
             double target_ms = 1000.0 / 60;
@@ -33,10 +47,9 @@ int main() {
                     while (window->pollEvent(event)) {
                         if (event.type == sf::Event::Closed)
                             window->close();
-
-                        //Process input here
                     }
                 }
+                inputManager->Update();
 
                 current_time = std::chrono::high_resolution_clock::now();
                 auto delta_time = current_time - previous_time;
@@ -53,6 +66,15 @@ int main() {
 
                     winMain->BeginScene();
                     //Engine render
+
+                    {
+                        //Render the FPS counter
+                        window->pushGLStates();
+                        winMain->SetBlendMode(BlendMode::Alpha);
+                        window->draw(fpsCounter);
+                        window->popGLStates();
+                    }
+
                     winMain->EndScene();
 
                     accum_update = std::chrono::nanoseconds(0);
@@ -65,17 +87,21 @@ int main() {
                         sumMs += iMs;
                     listDelta.clear();
 
-                    winMain->SetFPS(1000.0f / (60.0f / (float)sumMs));
+                    float fps = 1000.0f / (60.0f / (float)sumMs);
+                    winMain->SetFPS(fps);
+
+                    fpsCounter.setString(StringFormat("%.2f fps", fps));
+
                     accum_fps = std::chrono::nanoseconds(0);
                 }
             }
         }
 
-        printf("Finalizing application...");
+        printf("Finalizing application...\n");
 
         ptr_release(winMain);
 
-        printf("Finalized application.");
+        printf("Finalized application.\n");
         return 0;
     }
     catch (std::exception& e) {

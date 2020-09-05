@@ -163,6 +163,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="source\Engine\Input.cpp" />
     <ClCompile Include="source\Engine\Scene.cpp" />
     <ClCompile Include="source\Engine\Window.cpp" />
   </ItemGroup>

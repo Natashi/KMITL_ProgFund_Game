@@ -30,6 +30,9 @@
     <ClCompile Include="source\Engine\Scene.cpp">
       <Filter>Header Files\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="source\Engine\Input.cpp">
+      <Filter>Header Files\Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
