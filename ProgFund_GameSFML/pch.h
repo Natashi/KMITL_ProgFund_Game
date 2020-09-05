@@ -4,6 +4,10 @@
 
 #pragma warning (disable : 26495)	//'x' is uninitialized
 
+//windows
+
+#pragma comment(lib, "winmm.lib")
+
 //C++ STL
 
 #include <cmath>
@@ -26,6 +30,7 @@
 
 #include <GLEW/glew.h>
 
+#pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "GLEW/glew32s.lib")
 
 //SFML
@@ -57,6 +62,7 @@
 //XNA Maths
 
 #pragma warning(push)
+#pragma warning(disable : 4838)	//conversion requires a narrowing conversion
 #pragma warning(disable : 6011)	//dereferencing nullptr 'x'
 #pragma warning(disable : 6385)	//buffer overrun while writing to 'x'
 #pragma warning(disable : 6386)	//reading invalid data from 'x'
@@ -70,6 +76,10 @@
 #pragma comment(lib, "libogg/ogg.lib")
 #pragma comment(lib, "libvorbis/vorbis.lib")
 #pragma comment(lib, "libvorbis/vorbisfile.lib")
+
+//freetype
+
+#pragma comment(lib, "freetype.lib")
 
 //using namespace sf;
 
