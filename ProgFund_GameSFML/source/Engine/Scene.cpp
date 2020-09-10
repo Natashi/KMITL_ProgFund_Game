@@ -3,9 +3,14 @@
 #include "Scene.hpp"
 
 SceneManager::SceneManager() {
-	listScene_.resize(MAX_SCENE_SPACE);
 }
 SceneManager::~SceneManager() {
+}
+void SceneManager::Initialize() {
+	if (base_) throw EngineError("SceneManager already initialized.");
+	base_ = this;
+
+	listScene_.resize(MAX_SCENE_SPACE);
 }
 void SceneManager::Render() {
 	for (Scene* iScene : listScene_) {
@@ -38,6 +43,7 @@ void SceneManager::RemoveScene(Scene* ptrScene) {
 	}
 }
 
+SceneManager* SceneManager::base_ = nullptr;
 Scene::Scene(SceneManager* manager) {
 	manager_ = manager;
 	type_ = Type::Unknown;
@@ -72,6 +78,7 @@ void Scene::Update() {
 TaskBase::TaskBase(Scene* parent) {
 	parent_ = parent;
 	frame_ = 0;
+	frameEnd_ = 60;
 	bFinish_ = false;
 }
 TaskBase::~TaskBase() {

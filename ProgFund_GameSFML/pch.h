@@ -3,6 +3,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #pragma warning (disable : 26495)	//'x' is uninitialized
+#pragma warning (disable : 26812)	//prefer enum class over enum
 
 //windows
 
@@ -98,3 +99,6 @@ template<typename T> static constexpr inline void ptr_release(T*& ptr) {
 }
 using std::shared_ptr;
 using std::weak_ptr;
+
+namespace stdch = std::chrono;
+namespace stdfs = std::filesystem;

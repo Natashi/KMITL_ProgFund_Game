@@ -6,7 +6,7 @@ class TaskBase {
 	friend class Scene;
 public:
 	TaskBase(Scene* parent);
-	~TaskBase();
+	virtual ~TaskBase();
 
 	virtual void Render() = 0;
 	virtual void Update() = 0;
@@ -30,16 +30,16 @@ class Scene {
 	friend class SceneManager;
 public:
 	enum class Type : uint8_t {
-		Unknown,
 		Menu,
 		StageUI,
 		Stage,
 		Background,
 		Pause,
+		Unknown,
 	};
 public:
 	Scene(SceneManager* manager);
-	~Scene();
+	virtual ~Scene();
 
 	virtual void Render();
 	virtual void Update();
@@ -64,6 +64,7 @@ private:
 };
 
 class SceneManager {
+	static SceneManager* base_;
 public:
 	enum {
 		MAX_SCENE_SPACE = 8,
@@ -71,6 +72,10 @@ public:
 public:
 	SceneManager();
 	~SceneManager();
+
+	static SceneManager* const GetBase() { return base_; }
+
+	void Initialize();
 
 	void Render();
 	void Update();

@@ -10,6 +10,8 @@ public:
 	WindowMain();
 	~WindowMain();
 
+	static WindowMain* const GetBase() { return base_; }
+
 	void Initialize();
 	void Release();
 

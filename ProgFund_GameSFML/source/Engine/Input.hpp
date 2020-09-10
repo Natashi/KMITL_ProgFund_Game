@@ -26,6 +26,8 @@ public:
 	InputManager();
 	~InputManager();
 
+	static InputManager* const GetBase() { return base_; }
+
 	void Initialize();
 
 	void Update();

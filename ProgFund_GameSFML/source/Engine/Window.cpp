@@ -29,6 +29,9 @@ void WindowMain::Initialize() {
 		sf::Style::Titlebar | sf::Style::Close, *glContext_);
 	window_->setVerticalSyncEnabled(true);
 
+	glewExperimental = GL_TRUE;
+	if (glewInit() != GLEW_OK) throw EngineError("Failed to initialize GLEW.");
+
 	//Enables blending
 	glEnable(GL_BLEND);
 
@@ -83,15 +86,16 @@ void WindowMain::Release() {
 }
 
 void WindowMain::BeginScene(GLColor clearColor) {
-	window_->pushGLStates();
+	window_->setActive(true);
 
 	glClearDepth(1.0f);
 	glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	window_->setActive(false);
 }
 void WindowMain::EndScene(bool bPresent) {
-	window_->popGLStates();
 	if (bPresent)
 		window_->display();
 }

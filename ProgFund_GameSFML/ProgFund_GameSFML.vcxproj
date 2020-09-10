@@ -164,12 +164,14 @@
     </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="source\Engine\Input.cpp" />
+    <ClCompile Include="source\Engine\ResourceManager.cpp" />
     <ClCompile Include="source\Engine\Scene.cpp" />
     <ClCompile Include="source\Engine\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\Engine\Input.hpp" />
+    <ClInclude Include="source\Engine\ResourceManager.hpp" />
     <ClInclude Include="source\Engine\Scene.hpp" />
     <ClInclude Include="source\Engine\Window.hpp" />
     <ClInclude Include="source\Engine\Utility.hpp" />
