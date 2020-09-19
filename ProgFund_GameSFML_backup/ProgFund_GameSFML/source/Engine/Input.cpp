@@ -15,18 +15,18 @@ void InputManager::Initialize() {
 	if (base_) throw EngineError("InputManager already initialized.");
 	base_ = this;
 
-	mapVirtualKey_.insert(std::make_pair(VK_LEFT, VirtualKey::Left));
-	mapVirtualKey_.insert(std::make_pair(VK_UP, VirtualKey::Up));
-	mapVirtualKey_.insert(std::make_pair(VK_RIGHT, VirtualKey::Right));
-	mapVirtualKey_.insert(std::make_pair(VK_DOWN, VirtualKey::Down));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Left, VirtualKey::Left));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Up, VirtualKey::Up));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Right, VirtualKey::Right));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Down, VirtualKey::Down));
 
-	mapVirtualKey_.insert(std::make_pair(0x5A, VirtualKey::Shot));
-	mapVirtualKey_.insert(std::make_pair(0x58, VirtualKey::Spell));
-	mapVirtualKey_.insert(std::make_pair(VK_LSHIFT, VirtualKey::Focus));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Z, VirtualKey::Shot));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::X, VirtualKey::Spell));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::LShift, VirtualKey::Focus));
 
-	mapVirtualKey_.insert(std::make_pair(0x5A, VirtualKey::Ok));
-	mapVirtualKey_.insert(std::make_pair(0x58, VirtualKey::Cancel));
-	mapVirtualKey_.insert(std::make_pair(VK_ESCAPE, VirtualKey::Pause));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Z, VirtualKey::Ok));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::X, VirtualKey::Cancel));
+	mapVirtualKey_.insert(std::make_pair(sf::Keyboard::Escape, VirtualKey::Pause));
 
 	//------------------------------------------------------------------------------------
 
@@ -43,12 +43,10 @@ void InputManager::Initialize() {
 	mapState_.insert(std::make_pair(VirtualKey::Cancel, KeyState::Free));
 	mapState_.insert(std::make_pair(VirtualKey::Pause, KeyState::Free));
 }
-void InputManager::Release() {
-}
 
 void InputManager::Update() {
 	for (auto itrKey = mapVirtualKey_.begin(); itrKey != mapVirtualKey_.end(); ++itrKey) {
-		bool stateRaw = ::GetKeyState(itrKey->first) & 0x8000;
+		bool stateRaw = sf::Keyboard::isKeyPressed(itrKey->first);
 		auto itrVk = mapState_.find(itrKey->second);
 		if (itrVk != mapState_.end()) {
 			if (stateRaw)	//Key is pressed

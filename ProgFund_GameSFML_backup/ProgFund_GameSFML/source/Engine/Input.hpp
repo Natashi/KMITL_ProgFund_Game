@@ -29,12 +29,11 @@ public:
 	static InputManager* const GetBase() { return base_; }
 
 	void Initialize();
-	void Release();
 
 	void Update();
 
 	KeyState GetKeyState(VirtualKey key);
 private:
-	std::multimap<uint16_t, VirtualKey> mapVirtualKey_;
+	std::multimap<sf::Keyboard::Key, VirtualKey> mapVirtualKey_;
 	std::map<VirtualKey, KeyState> mapState_;
 };

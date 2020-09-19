@@ -2,6 +2,10 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#pragma warning(disable : 4244)	//conversion from x to y, possible loss of data
+#pragma warning(disable : 26495)	//'x' is uninitialized
+#pragma warning(disable : 26812)	//prefer enum class over enum
+
 //windows
 
 #include <Windows.h>
@@ -13,8 +17,6 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
-
-#include <typeindex>
 
 #include <iostream>
 #include <fstream>
@@ -33,32 +35,37 @@
 #undef min
 #undef max
 
-//DirectX
+//OpenGL
 
-#pragma warning(disable : 4005)		//macro redefinition
-#pragma warning(disable : 4244)		//conversion from x to y, possible loss of data
-#pragma warning(disable : 26495)	//'x' is uninitialized
-#pragma warning(disable : 26812)	//prefer enum class over enum
+#include <GLEW/glew.h>
 
-#include <DXGI.h>
-#include <DxErr.h>
-#include <dinput.h>
-#include <dsound.h>
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "GLEW/glew32s.lib")
 
-#include <D3D9.h>
-#include <D3DX9.h>
+//SFML
 
-#pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "DxErr.lib")
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dsound.lib")
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
+#include <SFML/OpenGL.hpp>
 
 #ifdef _DEBUG
-#pragma comment(lib, "d3dx9d.lib")
+
+#pragma comment(lib, "SFML/sfml-graphics-s-d.lib")
+#pragma comment(lib, "SFML/sfml-audio-s-d.lib")
+#pragma comment(lib, "SFML/sfml-window-s-d.lib")
+#pragma comment(lib, "SFML/sfml-system-s-d.lib")
+#pragma comment(lib, "SFML/sfml-main-d.lib")
+
 #else
-#pragma comment(lib, "d3dx9.lib")
+
+#pragma comment(lib, "SFML/sfml-graphics-s.lib")
+#pragma comment(lib, "SFML/sfml-audio-s.lib")
+#pragma comment(lib, "SFML/sfml-window-s.lib")
+#pragma comment(lib, "SFML/sfml-system-s.lib")
+#pragma comment(lib, "SFML/sfml-main.lib")
+
 #endif
 
 //XNA Maths
@@ -81,6 +88,10 @@
 
 #pragma comment(lib, "freetype.lib")
 
+#pragma comment(lib, "openal32.lib")
+
+#pragma comment(lib, "flac.lib")
+
 //using namespace sf;
 
 //Pointer utilities
@@ -101,3 +112,7 @@ using std::weak_ptr;
 
 namespace stdch = std::chrono;
 namespace stdfs = std::filesystem;
+
+using sf::Vector2f;
+using sf::Vector3f;
+using sf::Glsl::Mat4;

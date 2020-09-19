@@ -2,47 +2,6 @@
 
 #include "../../pch.h"
 
-//*******************************************************************
-//GUID utilities
-//*******************************************************************
-class DxGUID {
-public:
-	DxGUID(const GUID& id) : id_(id) {};
-
-	const GUID& Get() { return id_; }
-
-	bool operator<(const GUID& other) {
-		/*
-		uint64_t* pL = (uint64_t*)&l;
-		uint64_t* pR = (uint64_t*)&r;
-		if (pL[0] != pR[0]) return pL[0] < pR[0];
-		return pL[1] < pR[1];
-		*/
-		return memcmp(this, &other, sizeof(GUID)) < 0;
-	}
-	bool operator==(const GUID& other) {
-		return memcmp(this, &other, sizeof(GUID)) == 0;
-	}
-	operator GUID() { return this->Get(); }
-private:
-	GUID id_;
-};
-
-//*******************************************************************
-//Error utilities
-//*******************************************************************
-
-class ErrorUtility {
-public:
-	static std::string StringFromHResult(HRESULT hr, bool bDescription = true) {
-		std::string err = DXGetErrorStringA(hr);
-		if (bDescription) {
-			std::string desc = DXGetErrorDescriptionA(hr);
-			err += "; " + desc;
-		}
-		return err;
-	}
-};
 class EngineError {
 public:
 	EngineError() {}
@@ -53,11 +12,6 @@ public:
 protected:
 	std::string message_;
 };
-
-/*
-//*******************************************************************
-//Color utilities
-//*******************************************************************
 
 static constexpr DWORD GenColorARGB(byte a, byte r, byte g, byte b) {
 	return ((DWORD)r << 24) | ((DWORD)g << 16) | ((DWORD)b << 8) | ((DWORD)a);
@@ -70,20 +24,24 @@ static constexpr DWORD GenColorRGBA(byte r, byte g, byte b, byte a) {
 }
 
 //Normalized RGBA [0.0~1.0]
-class DxColor {
+class GLColor {
 public:
-	DxColor() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
-	DxColor(float _r, float _g, float _b) : r(_r), g(_g), b(_b), a(1.0f) {}
-	DxColor(float _r, float _g, float _b, float _a) : r(_r), g(_g), b(_b), a(_a) {}
-	DxColor(DWORD argb) {
+	GLColor() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
+	GLColor(float _r, float _g, float _b) : r(_r), g(_g), b(_b), a(1.0f) {}
+	GLColor(float _r, float _g, float _b, float _a) : r(_r), g(_g), b(_b), a(_a) {}
+	GLColor(DWORD argb) {
 		r = ((argb >> 24) & 0xff) / 255.0f;
 		g = ((argb >> 16) & 0xff) / 255.0f;
 		b = ((argb >> 8) & 0xff) / 255.0f;
 		a = ((argb) & 0xff) / 255.0f;
 	}
 
+	operator sf::Color() {
+		return sf::Color(r * 255, g * 255, b * 255, a * 255);
+	}
 	operator DWORD() {
-		GenColorRGBA(r * 255, g * 255, b * 255, a * 255);
+		sf::Color c = this->operator sf::Color();
+		GenColorRGBA(c.r, c.g, c.b, c.a);
 	}
 public:
 	float r;
@@ -91,11 +49,6 @@ public:
 	float b;
 	float a;
 };
-*/
-
-//*******************************************************************
-//Math utilities
-//*******************************************************************
 
 constexpr double GM_PI = 3.14159265358979323846;
 constexpr double GM_PI_X2 = GM_PI * 2.0;
@@ -151,49 +104,56 @@ public:
 			return a + ((L)1 - ((L)1 - x) * ((L)1 - x)) * (b - a);
 		}
 	};
+	class XNAExt {
+	public:
+		static XMFINLINE XMVECTOR Swizzle(CXMVECTOR V, UINT E0, UINT E1, UINT E2, UINT E3) {
+#if defined(_XM_NO_INTRINSICS_)
+			return ::XMVectorSwizzle(V, E0, E1, E2, E3);
+#else // XM_SSE_INTRINSICS_
+			XMASSERT((E0 < 4) && (E1 < 4) && (E2 < 4) && (E3 < 4));
+			{
+				const float* f = V.m128_f32;
+				return _mm_set_ps(f[E3], f[E2], f[E1], f[E0]);
+			}
+#endif
+		}
+	};
 };
 
-//*******************************************************************
-//Rect utilities
-//*******************************************************************
-
-struct DxRect {
+struct GLRect {
 	float left;
 	float top;
 	float right;
 	float bottom;
 
-	DxRect() : left(0), top(0), right(0), bottom(0) {}
-	DxRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
+	GLRect() : left(0), top(0), right(0), bottom(0) {}
+	GLRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
 };
 
-//*******************************************************************
-//String utilities
-//*******************************************************************
+enum class BlendMode : uint8_t {
+	Alpha,
+	Add,
+	Subtract,
+	RevSubtract,
+	Invert,
+};
 
-class StringUtility {
-public:
-	static std::string Format(const char* str, ...) {
-		va_list	vl;
-		va_start(vl, str);
+static std::string StringFormat(const char* str, ...) {
+	va_list	vl;
+	va_start(vl, str);
 
-		//The size returned by _vsnprintf does NOT include null terminator
-		int size = _vsnprintf(nullptr, 0U, str, vl);
-		std::string res;
-		if (size > 0) {
-			res.resize(size + 1);
-			_vsnprintf((char*)res.c_str(), res.size(), str, vl);
-			res.pop_back();	//Don't include the null terminator
-		}
-
-		va_end(vl);
-		return res;
+	//The size returned by _vsnprintf does NOT include null terminator
+	int size = _vsnprintf(nullptr, 0U, str, vl);
+	std::string res;
+	if (size > 0) {
+		res.resize(size + 1);
+		_vsnprintf((char*)res.c_str(), res.size(), str, vl);
+		res.pop_back();	//Don't include the null terminator
 	}
-};
 
-//*******************************************************************
-//Path utilities
-//*******************************************************************
+	va_end(vl);
+	return res;
+}
 
 class PathProperty {
 public:

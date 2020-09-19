@@ -31,7 +31,7 @@ protected:
 	Type type_;
 	std::string path_;
 };
-/*
+
 class FontResource : public Resource {
 public:
 	FontResource();
@@ -43,7 +43,6 @@ public:
 protected:
 	sf::Font font_;
 };
-*/
 class TextureResource : public Resource {
 public:
 	TextureResource();
@@ -52,19 +51,12 @@ public:
 		LoadFromFile(path, false);
 	}
 	virtual void LoadFromFile(const std::string& path, bool bMipmap);
-	virtual void CreateAsRenderTarget(const std::string& name, size_t width, size_t height);
 	virtual void UnloadResource();
 
-	D3DXIMAGE_INFO* GetImageInfo() { return &infoImage_; }
-
-	IDirect3DTexture9* GetTexture() { return texture_; }
-	IDirect3DSurface9* GetSurface() { return surface_; }
+	sf::Texture* GetData() { return &texture_; }
 protected:
-	D3DXIMAGE_INFO infoImage_;
-	IDirect3DTexture9* texture_;
-	IDirect3DSurface9* surface_;
+	sf::Texture texture_;
 };
-/*
 class SoundResource : public Resource {
 public:
 	SoundResource();
@@ -76,36 +68,28 @@ public:
 protected:
 	sf::SoundBuffer buffer_;
 };
-*/
 class ShaderResource : public Resource {
 public:
 	enum class Type : uint8_t {
-		Vertex,
-		Pixel,
-		Geometry,
-		Hull,
-		Unspecified,
+		Vertex = sf::Shader::Vertex,
+		Fragment = sf::Shader::Fragment,
+		Geometry = sf::Shader::Geometry,
+		Fused = 0xff,
 	};
 public:
 	ShaderResource();
 
 	virtual void LoadFromFile(const std::string& path) {
-		LoadFromFile(path, Type::Unspecified);
+		LoadFromFile(path, Type::Fragment);
 	}
 	virtual void LoadFromFile(const std::string& path, Type type);
+	virtual void LoadFromFile(const std::string& pathVertex, const std::string& pathFragment);
 	virtual void UnloadResource();
 
-	D3DXEFFECT_DESC* GetEffectDesc() { return &effectDesc_; }
-	ID3DXEffect* GetEffect() { return effect_; }
+	sf::Shader* GetData() { return &shader_; }
 	Type GetShaderType() { return typeShader_; }
-
-	D3DXHANDLE GetTechnique() { return technique_; }
-	D3DXHANDLE SetTechniqueByName(const char* name);
-	void SetTechnique(D3DXHANDLE name);
 protected:
-	D3DXEFFECT_DESC effectDesc_;
-	ID3DXEffect* effect_;
-	D3DXHANDLE technique_;
+	sf::Shader shader_;
 	Type typeShader_;
 };
 
@@ -118,7 +102,6 @@ public:
 	static ResourceManager* const GetBase() { return base_; }
 
 	void Initialize();
-	void Release();
 
 	void AddResource(shared_ptr<Resource> resource, const std::string& path);
 	void RemoveResource(const std::string& path);

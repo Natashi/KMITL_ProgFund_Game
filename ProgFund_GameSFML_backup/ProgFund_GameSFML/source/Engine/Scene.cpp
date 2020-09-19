@@ -16,10 +16,6 @@ void SceneManager::Initialize() {
 
 	listScene_.resize(MAX_SCENE_SPACE);
 }
-void SceneManager::Release() {
-	for (Scene*& iScene : listScene_)
-		ptr_delete(iScene);
-}
 void SceneManager::Render() {
 	for (Scene* iScene : listScene_) {
 		if (iScene)
@@ -34,9 +30,9 @@ void SceneManager::Update() {
 }
 void SceneManager::AddScene(Scene* ptrScene, size_t indexScene) {
 	if (indexScene >= MAX_SCENE_SPACE)
-		throw EngineError(StringUtility::Format("Scene index out of bounds: %u", indexScene));
+		throw EngineError(StringFormat("Scene index out of bounds: %u", indexScene));
 	else if (listScene_[indexScene])
-		throw EngineError(StringUtility::Format("Scene already exists: %u", indexScene));
+		throw EngineError(StringFormat("Scene already exists: %u", indexScene));
 	listScene_[indexScene] = ptrScene;
 }
 void SceneManager::RemoveScene(size_t indexScene) {

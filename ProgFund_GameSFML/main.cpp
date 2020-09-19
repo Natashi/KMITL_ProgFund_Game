@@ -5,128 +5,130 @@
 #include "source/Engine/Window.hpp"
 #include "source/Engine/Scene.hpp"
 
-int main() {
-    try {
-        printf("Initializing application...\n");
+#include "source/Game/Menu.hpp"
 
-        sf::Text fpsCounter;
-        fpsCounter.setCharacterSize(16);
-        fpsCounter.setPosition(0.0f, 0.0f);
-        fpsCounter.setFillColor(sf::Color::White);
-        fpsCounter.setString("");
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
+	HWND hWnd = nullptr;
+	try {
+		printf("Initializing application...\n");
 
-        ResourceManager* resourceManager = new ResourceManager();
-        resourceManager->Initialize();
-        {
-            std::string path = "D:/Visual Studio Projects/ProgFund_GameSFML/Debug/resource/font/GN-Kin-iro_SansSerif.ttf";
-            auto fntKinIro = std::make_shared<FontResource>();
-            fntKinIro->LoadFromFile(path);
-            resourceManager->AddResource(fntKinIro, "GN-Kin-iro_SansSerif.ttf");
+		WindowMain* winMain = new WindowMain();
+		winMain->Initialize(hInstance);
+		hWnd = winMain->GetHandle();
 
-            fpsCounter.setFont(*fntKinIro->GetData());
-        }
+		ResourceManager* resourceManager = new ResourceManager();
+		resourceManager->Initialize();
+		/*
+		{
+			std::string path = PathProperty::GetModuleDirectory() + "resource/font/GN-Kin-iro_SansSerif.ttf";
+			auto fntKinIro = std::make_shared<FontResource>();
+			fntKinIro->LoadFromFile(path);
+			resourceManager->AddResource(fntKinIro, "font/GN-Kin-iro_SansSerif.ttf");
 
-        WindowMain* winMain = new WindowMain();
-        winMain->Initialize();
+			fpsCounter.setFont(*fntKinIro->GetData());
+		}
+		*/
 
-        InputManager* inputManager = new InputManager();
-        inputManager->Initialize();
+		InputManager* inputManager = new InputManager();
+		inputManager->Initialize();
 
-        SceneManager* sceneManager = new SceneManager();
-        sceneManager->Initialize();
+		SceneManager* sceneManager = new SceneManager();
+		sceneManager->Initialize();
 
-        printf("Initialized application.\n");
+		printf("Initialized application.\n");
 
-        {
-            sf::RenderWindow* window = winMain->GetWindow();
+		{
+			Menu_TaskHost* menuScene = new Menu_TaskHost(sceneManager);
+			menuScene->SetType(Scene::Type::Menu);
+			sceneManager->AddScene(menuScene, (size_t)Scene::Type::Menu);
+			printf("Initialized game.\n");
+		}
 
-            //Refresh rate -> 60fps
-            auto t_target_ms = stdch::duration<double, std::milli>(1000.0f / 60);
+		{
+			//Refresh rate -> 60fps
+			auto t_target_ms = stdch::duration<double, std::milli>(1000.0 / 60);
 
-            auto current_time = stdch::high_resolution_clock::now();
-            auto previous_time = current_time;
-            auto max_frame_delay = stdch::milliseconds(33);
+			auto current_time = stdch::high_resolution_clock::now();
+			auto previous_time = current_time;
 
-            auto accum_fps = stdch::milliseconds(0);
-            auto accum_update = stdch::milliseconds(0);
+			auto accum_fps = stdch::milliseconds(0);
+			auto accum_update = stdch::milliseconds(0);
 
-            std::list<uint64_t> listDelta;
+			std::list<uint64_t> listDelta;
 
-            while (window->isOpen()) {
-                {
-                    sf::Event event;
-                    while (window->pollEvent(event)) {
-                        if (event.type == sf::Event::Closed)
-                            window->close();
-                    }
-                }
+			MSG msg = { 0 };
+			while (msg.message != WM_QUIT) {
+				if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
+				else {
+					current_time = stdch::high_resolution_clock::now();
+					auto delta_time = stdch::duration_cast<stdch::milliseconds>(current_time - previous_time);
 
-                current_time = stdch::high_resolution_clock::now();
-                auto delta_time = stdch::duration_cast<stdch::milliseconds>(current_time - previous_time);
-                if (delta_time > max_frame_delay)
-                    delta_time = max_frame_delay;
+					accum_fps += delta_time;
+					accum_update += delta_time;
 
-                accum_fps += delta_time;
-                accum_update += delta_time;
+					if (accum_update > t_target_ms) {
+						listDelta.push_back(delta_time.count());
 
-                if (accum_update > t_target_ms) {
-                    listDelta.push_back(delta_time.count());
+						//Engine update
+						inputManager->Update();
+						sceneManager->Update();
 
-                    //Engine update
-                    inputManager->Update();
-                    sceneManager->Update();
-                    
-                    //Engine render
-                    winMain->BeginScene();
-                    sceneManager->Render();
-                    {
-                        //Render the FPS counter
-                        window->pushGLStates();
-                        winMain->SetBlendMode(BlendMode::Alpha);
-                        window->draw(fpsCounter);
-                        window->popGLStates();
-                    }
-                    winMain->EndScene();
+						//Engine render
+						winMain->BeginScene();
+						sceneManager->Render();
+						/*
+						{
+							//Render the FPS counter
+							window->pushGLStates();
+							winMain->SetBlendMode(BlendMode::Alpha);
+							window->draw(fpsCounter);
+							window->popGLStates();
+						}
+						*/
+						winMain->EndScene();
 
-                    accum_update = stdch::milliseconds(0);
-                }
+						accum_update = stdch::milliseconds(0);
+						previous_time = stdch::high_resolution_clock::now();
+					}
 
-                //2 fps updates per second
-                if (accum_fps > stdch::milliseconds(500)) {
-                    uint64_t sumMs = 0ui64;
-                    for (uint64_t& iMs : listDelta)
-                        sumMs += iMs;
-                    listDelta.clear();
+					//2 fps updates per second
+					if (accum_fps > stdch::milliseconds(500)) {
+						uint64_t sumMs = 0ui64;
+						for (uint64_t& iMs : listDelta)
+							sumMs += iMs;
+						listDelta.clear();
 
-                    double fps = t_target_ms.count() / (double)sumMs;
-                    winMain->SetFPS(fps);
+						double fps = t_target_ms.count() / (double)sumMs;
+						winMain->SetFPS(fps);
 
-                    fpsCounter.setString(StringFormat("%.2f fps", fps));
-                    //printf("%.2f\n", fps);
+						//fpsCounter.setString(StringFormat("%.2f fps", fps));
+						//printf("%.2f\n", fps);
 
-                    accum_fps = stdch::milliseconds(0);
-                }
-            }
-        }
+						accum_fps = stdch::milliseconds(0);
+					}
+				}
+			}
+		}
 
-        printf("Finalizing application...\n");
+		printf("Finalizing application...\n");
 
-        ptr_delete(resourceManager);
-        ptr_delete(sceneManager);
-        ptr_delete(inputManager);
-        ptr_release(winMain);
+		ptr_release(resourceManager);
+		ptr_release(sceneManager);
+		ptr_release(inputManager);
+		ptr_release(winMain);
 
-        printf("Finalized application.\n");
-        return 0;
-    }
-    catch (std::exception& e) {
-        printf("Unexpected error: %s", e.what());
-        return -2;
-    }
-    catch (EngineError& e) {
-        printf("Engine error: %s", e.what());
-        return -1;
-    }
+		printf("Finalized application.\n");
+		return 0;
+	}
+	catch (std::exception& e) {
+		MessageBoxA(hWnd, e.what(), "Unexpected Error", MB_ICONERROR | MB_APPLMODAL | MB_OK);
+	}
+	catch (EngineError& e) {
+		MessageBoxA(hWnd, e.what(), "Engine Error", MB_ICONERROR | MB_APPLMODAL | MB_OK);
+	}
 
-    return 0;
+	return 0;
 }

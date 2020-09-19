@@ -79,7 +79,6 @@ public:
 	static SceneManager* const GetBase() { return base_; }
 
 	void Initialize();
-	void Release();
 
 	void Render();
 	void Update();
