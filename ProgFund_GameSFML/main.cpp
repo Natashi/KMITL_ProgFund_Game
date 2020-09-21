@@ -7,6 +7,8 @@
 
 #include "source/Game/Menu.hpp"
 
+DWORD DxGetTime();
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
 	HWND hWnd = nullptr;
 	try {
@@ -46,15 +48,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		{
 			//Refresh rate -> 60fps
-			auto t_target_ms = stdch::duration<double, std::milli>(1000.0 / 60);
+			double t_target_ms = 1000.0 / 60;
 
-			auto current_time = stdch::high_resolution_clock::now();
-			auto previous_time = current_time;
+			DWORD current_time = DxGetTime();
+			DWORD previous_time = current_time;
 
-			auto accum_fps = stdch::milliseconds(0);
-			auto accum_update = stdch::milliseconds(0);
+			DWORD accum_fps = 0;
+			DWORD accum_update = 0;
 
-			std::list<uint64_t> listDelta;
+			std::list<DWORD> listDelta;
 
 			MSG msg = { 0 };
 			while (msg.message != WM_QUIT) {
@@ -63,14 +65,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 					DispatchMessage(&msg);
 				}
 				else {
-					current_time = stdch::high_resolution_clock::now();
-					auto delta_time = stdch::duration_cast<stdch::milliseconds>(current_time - previous_time);
+					current_time = DxGetTime();
+					DWORD delta_time = current_time - previous_time;
 
 					accum_fps += delta_time;
 					accum_update += delta_time;
 
 					if (accum_update > t_target_ms) {
-						listDelta.push_back(delta_time.count());
+						listDelta.push_back(accum_update);
 
 						//Engine update
 						inputManager->Update();
@@ -90,25 +92,27 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 						*/
 						winMain->EndScene();
 
-						accum_update = stdch::milliseconds(0);
-						previous_time = stdch::high_resolution_clock::now();
+						accum_update = 0;
+						previous_time = DxGetTime();
 					}
 
 					//2 fps updates per second
-					if (accum_fps > stdch::milliseconds(500)) {
-						uint64_t sumMs = 0ui64;
-						for (uint64_t& iMs : listDelta)
+					if (accum_fps > 500) {
+						DWORD sumMs = 0;
+						for (DWORD& iMs : listDelta)
 							sumMs += iMs;
 						listDelta.clear();
 
-						double fps = t_target_ms.count() / (double)sumMs;
+						double fps = (t_target_ms * 1000) / (double)sumMs;
 						winMain->SetFPS(fps);
 
 						//fpsCounter.setString(StringFormat("%.2f fps", fps));
 						//printf("%.2f\n", fps);
 
-						accum_fps = stdch::milliseconds(0);
+						accum_fps = 0;
 					}
+
+					Sleep(1);
 				}
 			}
 		}
@@ -131,4 +135,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	}
 
 	return 0;
+}
+
+DWORD DxGetTime() {
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nCounter;
+	QueryPerformanceFrequency(&nFreq);
+	QueryPerformanceCounter(&nCounter);
+	return (DWORD)(nCounter.QuadPart * 1000 / nFreq.QuadPart);
 }
