@@ -17,6 +17,8 @@ Menu_TaskHost::Menu_TaskHost(SceneManager* manager) : Scene(manager) {
 
     auto taskSplash = std::make_shared<Menu_SplashScene>(this);
     this->AddTask(taskSplash);
+
+	bAutoDelete_ = true;
 }
 Menu_TaskHost::~Menu_TaskHost() {
     ResourceManager* resourceManager = ResourceManager::GetBase();

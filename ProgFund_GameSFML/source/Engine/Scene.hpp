@@ -51,6 +51,9 @@ public:
 	void SetEnableUpdate(bool b) { bEnableUpdate_ = b; }
 	bool IsEnableUpdate() { return bEnableUpdate_; }
 
+	bool IsDelete() { return bDelete_; }
+	bool IsAutoDelete() { return bAutoDelete_; }
+
 	void SetType(Type t) { type_ = t; }
 	Type GetType() { return type_; }
 
@@ -63,6 +66,8 @@ protected:
 	Type type_;
 	bool bEnableRender_;
 	bool bEnableUpdate_;
+	bool bDelete_;
+	bool bAutoDelete_;
 	std::list<shared_ptr<TaskBase>> listTask_;
 };
 
@@ -87,6 +92,8 @@ public:
 	void AddScene(Scene* ptrScene, size_t indexScene);
 	void RemoveScene(size_t indexScene);
 	void RemoveScene(Scene* ptrScene);
+
+	bool IsAnyActive();
 private:
 	std::vector<Scene*> listScene_;
 };

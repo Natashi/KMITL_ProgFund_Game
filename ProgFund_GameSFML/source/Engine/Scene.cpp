@@ -27,9 +27,14 @@ void SceneManager::Render() {
 	}
 }
 void SceneManager::Update() {
-	for (Scene* iScene : listScene_) {
-		if (iScene)
+	size_t i = 0;
+	for (size_t i = 0; i < listScene_.size(); ++i) {
+		Scene* iScene = listScene_[i];
+		if (iScene) {
 			iScene->Update();
+			if (iScene->IsAutoDelete() && iScene->GetTaskCount() == 0)
+				RemoveScene(i);
+		}
 	}
 }
 void SceneManager::AddScene(Scene* ptrScene, size_t indexScene) {
@@ -50,6 +55,12 @@ void SceneManager::RemoveScene(Scene* ptrScene) {
 		}
 	}
 }
+bool SceneManager::IsAnyActive() {
+	for (auto iScene = listScene_.begin(); iScene != listScene_.end(); ++iScene) {
+		if (*iScene) return true;
+	}
+	return false;
+}
 
 //*******************************************************************
 //Scene
@@ -59,6 +70,8 @@ Scene::Scene(SceneManager* manager) {
 	type_ = Type::Unknown;
 	bEnableRender_ = true;
 	bEnableUpdate_ = true;
+	bDelete_ = false;
+	bAutoDelete_ = true;
 }
 Scene::~Scene() {
 }

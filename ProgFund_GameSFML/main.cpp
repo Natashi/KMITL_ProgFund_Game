@@ -94,9 +94,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 						accum_update = 0;
 						previous_time = DxGetTime();
+
+						if (!sceneManager->IsAnyActive())
+							msg.message = WM_QUIT;
 					}
 
-					//2 fps updates per second
+					//2 fps updates per second, hopefully
 					if (accum_fps > 500) {
 						DWORD sumMs = 0;
 						for (DWORD& iMs : listDelta)
