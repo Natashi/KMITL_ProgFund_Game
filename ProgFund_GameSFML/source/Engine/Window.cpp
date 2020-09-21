@@ -19,6 +19,7 @@ WindowMain::WindowMain() {
 
 	matView_ = XMMatrixIdentity();
 	matProjection_ = XMMatrixIdentity();
+	matViewport_ = XMMatrixIdentity();
 
 	previousBlendMode_ = (BlendMode)0xff;
 
@@ -173,7 +174,6 @@ void WindowMain::SetBlendMode(BlendMode mode) {
 	pDevice_->SetRenderState(D3DRS_SRCBLENDALPHA, sba); \
 	pDevice_->SetRenderState(D3DRS_DESTBLENDALPHA, dba);
 
-	FLOAT blendFactor[4] = { 0, 0, 0, 0 };
 	switch (mode) {
 	case BlendMode::Add:
 		SETBLENDOP(D3DBLENDOP_ADD, TRUE);
@@ -212,6 +212,15 @@ void WindowMain::SetViewPort(float x, float y, float w, float h, float zn, float
 	viewPort.MaxZ = 1.0f;
 	pDevice_->SetViewport(&viewPort);
 	matProjection_ = XMMatrixPerspectiveFovLH(XM_PIDIV4, w / h, zn, zf);
+	{
+		matViewport_ = XMMatrixIdentity();
+		matViewport_._11 = 2.0f / w;
+		matViewport_._22 = -2.0f / h;
+		matViewport_._33 = -2.0f / (zf - zn);
+		matViewport_._41 = -(w + x) / w;
+		matViewport_._42 = (h + y) / h;
+		matViewport_._43 = -(zf + zn) / (zf - zn);
+	}
 }
 void WindowMain::SetZBufferMode(bool bWrite, bool bUse) {
 	pDevice_->SetRenderState(D3DRS_ZENABLE, bUse);

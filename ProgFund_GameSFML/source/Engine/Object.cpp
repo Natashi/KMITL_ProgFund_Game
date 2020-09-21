@@ -191,7 +191,7 @@ void StaticRenderObject::Render() {
 	window->SetBlendMode(blend_);
 
 	XMMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
-		&angleZ_, &scale_, window->GetProjectionMatrix());
+		&angleZ_, &scale_, nullptr);
 
 	ID3DXEffect* effect = shader_->GetEffect();
 	{
@@ -199,12 +199,15 @@ void StaticRenderObject::Render() {
 		if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
 			effect->SetMatrix(handle, (D3DXMATRIX*)&matWorld);
 		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
-			effect->SetMatrix(handle, (D3DXMATRIX*)window->GetProjectionMatrix());
+			effect->SetMatrix(handle, (D3DXMATRIX*)window->GetViewportMatrix());
 		if (handle = effect->GetParameterBySemantic(nullptr, "OBJCOLOR"))
 			effect->SetVector(handle, &color_);
 	}
 
 	shader_->SetTechnique("Render");
+
+	device->SetTexture(0, texture_->GetTexture());
+	device->SetFVF(VertexTLX::VertexFormat);
 
 	device->SetVertexDeclaration(VertexDeclarationManager::GetBase()->GetDeclarationTLX());
 	device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
@@ -228,6 +231,8 @@ void StaticRenderObject::Render() {
 		}
 		effect->End();
 	}
+
+	device->SetVertexDeclaration(nullptr);
 }
 
 void StaticRenderObject::UpdateVertexBuffer() {

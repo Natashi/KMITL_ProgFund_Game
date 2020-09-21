@@ -142,8 +142,9 @@ void TextureResource::LoadFromFile(const std::string& path, bool bMipmap) {
 	};
 
 	WrapError(D3DXGetImageInfoFromFileA(path.c_str(), &infoImage_));
-	WrapError(D3DXCreateTextureFromFileExA(device, path.c_str(), D3DX_DEFAULT, D3DX_DEFAULT,
-		bMipmap ? infoImage_.MipLevels : 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, D3DX_FILTER_BOX,
+	WrapError(D3DXCreateTextureFromFileExA(device, path.c_str(), 
+		D3DX_DEFAULT, D3DX_DEFAULT,
+		bMipmap ? infoImage_.MipLevels : 0, 0, infoImage_.Format, D3DPOOL_DEFAULT, D3DX_FILTER_BOX,
 		D3DX_DEFAULT, 0x00000000, nullptr, nullptr, &texture_));
 
 	if (bMipmap)

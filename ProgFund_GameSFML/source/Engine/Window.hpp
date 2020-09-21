@@ -48,6 +48,7 @@ public:
 
 	XMMATRIX* GetViewMatrix() { return &matView_; }
 	XMMATRIX* GetProjectionMatrix() { return &matProjection_; }
+	XMMATRIX* GetViewportMatrix() { return &matViewport_; }
 
 	void SetZBufferMode(bool bWrite, bool bUse);
 	void SetTextureFilter(D3DTEXTUREFILTERTYPE min, D3DTEXTUREFILTERTYPE mag, D3DTEXTUREFILTERTYPE mip = D3DTEXF_LINEAR);
@@ -67,6 +68,7 @@ private:
 
 	XMMATRIX matView_;
 	XMMATRIX matProjection_;
+	XMMATRIX matViewport_;
 
 	BlendMode previousBlendMode_;
 
