@@ -21,6 +21,11 @@ public:
 	VertexTLX(const D3DXVECTOR3& pos, const D3DXVECTOR2& tex, const DWORD& col) :
 		position(pos), texcoord(tex), diffuse(col) {
 	}
+
+	inline void Bias(float bias) {
+		position.x += bias;
+		position.y += bias;
+	}
 };
 
 class VertexDeclarationManager {

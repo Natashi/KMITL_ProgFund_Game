@@ -313,6 +313,8 @@ void Sprite2D::SetDestRect(const DxRect& rc) {
 	GetVertex(1)->position = D3DXVECTOR3(rc.right, rc.top, 1.0f);
 	GetVertex(2)->position = D3DXVECTOR3(rc.left, rc.bottom, 1.0f);
 	GetVertex(3)->position = D3DXVECTOR3(rc.right, rc.bottom, 1.0f);
+	for (int i = 0; i < 4; ++i)
+		GetVertex(i)->Bias(-0.5f);
 
 	//UpdateVertexBuffer();
 }
