@@ -8,6 +8,12 @@
 
 #pragma comment(lib, "winmm.lib")
 
+//xmm
+
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#include <immintrin.h>
+
 //C++ STL
 
 #include <cmath>
@@ -37,6 +43,7 @@
 
 #pragma warning(disable : 4005)		//macro redefinition
 #pragma warning(disable : 4244)		//conversion from x to y, possible loss of data
+#pragma warning(disable : 4305)		//double->float truncation
 #pragma warning(disable : 26495)	//'x' is uninitialized
 #pragma warning(disable : 26812)	//prefer enum class over enum
 
@@ -61,18 +68,6 @@
 #pragma comment(lib, "d3dx9.lib")
 #endif
 
-//XNA Maths
-
-#pragma warning(push)
-#pragma warning(disable : 4838)	//conversion requires a narrowing conversion
-#pragma warning(disable : 6011)	//dereferencing nullptr 'x'
-#pragma warning(disable : 6385)	//buffer overrun while writing to 'x'
-#pragma warning(disable : 6386)	//reading invalid data from 'x'
-
-#include <XNAMaths/xnamath.h>
-
-#pragma warning(pop)
-
 //Others
 
 #pragma comment(lib, "libogg/ogg.lib")
@@ -80,8 +75,6 @@
 #pragma comment(lib, "libvorbis/vorbisfile.lib")
 
 #pragma comment(lib, "freetype.lib")
-
-//using namespace sf;
 
 //Pointer utilities
 template<typename T> static constexpr inline void ptr_delete(T*& ptr) {
@@ -101,3 +94,6 @@ using std::weak_ptr;
 
 namespace stdch = std::chrono;
 namespace stdfs = std::filesystem;
+
+#define CD3DXVECTOR2 const D3DXVECTOR2&
+#define CD3DXVECTOR3 const D3DXVECTOR3&

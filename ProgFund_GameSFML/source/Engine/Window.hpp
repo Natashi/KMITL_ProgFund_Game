@@ -46,9 +46,9 @@ public:
 
 	void SetViewPort(float x, float y, float w, float h, float zn = 0.0f, float zf = 1.0f);
 
-	XMMATRIX* GetViewMatrix() { return &matView_; }
-	XMMATRIX* GetProjectionMatrix() { return &matProjection_; }
-	XMMATRIX* GetViewportMatrix() { return &matViewport_; }
+	D3DXMATRIX* GetViewMatrix() { return &matView_; }
+	D3DXMATRIX* GetProjectionMatrix() { return &matProjection_; }
+	D3DXMATRIX* GetViewportMatrix() { return &matViewport_; }
 
 	void SetZBufferMode(bool bWrite, bool bUse);
 	void SetTextureFilter(D3DTEXTUREFILTERTYPE min, D3DTEXTUREFILTERTYPE mag, D3DTEXTUREFILTERTYPE mip = D3DTEXF_LINEAR);
@@ -66,9 +66,9 @@ private:
 
 	VertexDeclarationManager* vertexManager_;
 
-	XMMATRIX matView_;
-	XMMATRIX matProjection_;
-	XMMATRIX matViewport_;
+	D3DXMATRIX matView_;
+	D3DXMATRIX matProjection_;
+	D3DXMATRIX matViewport_;
 
 	BlendMode previousBlendMode_;
 

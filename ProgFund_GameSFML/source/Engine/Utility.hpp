@@ -2,6 +2,8 @@
 
 #include "../../pch.h"
 
+#include "VectorExtensions.hpp"
+
 //*******************************************************************
 //GUID utilities
 //*******************************************************************
@@ -54,44 +56,35 @@ protected:
 	std::string message_;
 };
 
-/*
 //*******************************************************************
 //Color utilities
 //*******************************************************************
 
-static constexpr DWORD GenColorARGB(byte a, byte r, byte g, byte b) {
-	return ((DWORD)r << 24) | ((DWORD)g << 16) | ((DWORD)b << 8) | ((DWORD)a);
-}
-static constexpr DWORD GenColorXRGB(byte r, byte g, byte b) {
-	return GenColorARGB(0xff, r, g, b);
-}
-static constexpr DWORD GenColorRGBA(byte r, byte g, byte b, byte a) {
-	return GenColorARGB(a, r, g, b);
-}
-
-//Normalized RGBA [0.0~1.0]
-class DxColor {
+class ColorUtility {
 public:
-	DxColor() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
-	DxColor(float _r, float _g, float _b) : r(_r), g(_g), b(_b), a(1.0f) {}
-	DxColor(float _r, float _g, float _b, float _a) : r(_r), g(_g), b(_b), a(_a) {}
-	DxColor(DWORD argb) {
-		r = ((argb >> 24) & 0xff) / 255.0f;
-		g = ((argb >> 16) & 0xff) / 255.0f;
-		b = ((argb >> 8) & 0xff) / 255.0f;
-		a = ((argb) & 0xff) / 255.0f;
+	static inline byte GetA(const D3DCOLOR& color) {
+		return (color >> 24) & 0xff;
+	}
+	static inline byte GetR(const D3DCOLOR& color) {
+		return (color >> 16) & 0xff;
+	}
+	static inline byte GetG(const D3DCOLOR& color) {
+		return (color >> 8) & 0xff;
+	}
+	static inline byte GetB(const D3DCOLOR& color) {
+		return color & 0xff;
 	}
 
-	operator DWORD() {
-		GenColorRGBA(r * 255, g * 255, b * 255, a * 255);
+	template<typename T>
+	static inline void Clamp(T& color) {
+		color = std::clamp(color, (T)0x00, (T)0xff);
 	}
-public:
-	float r;
-	float g;
-	float b;
-	float a;
+	template<typename T>
+	static inline T ClampRet(T color) {
+		ColorUtility::Clamp(color);
+		return color;
+	}
 };
-*/
 
 //*******************************************************************
 //Math utilities
@@ -165,6 +158,12 @@ struct DxRect {
 
 	DxRect() : left(0), top(0), right(0), bottom(0) {}
 	DxRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
+
+	static DxRect SetFromIndex(int wd, int ht, int id, int ict, int ox = 0, int oy = 0) {
+		int iw = (id % ict) * wd + ox;
+		int ih = (id / ict) * ht + oy;
+		return DxRect(iw, ih, iw + wd, ih + ht);
+	}
 };
 
 //*******************************************************************

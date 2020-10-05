@@ -37,55 +37,40 @@ RenderObject::RenderObject() {
 RenderObject::~RenderObject() {
 }
 
-XMMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECTOR3* const angle,
-	D3DXVECTOR3* const scale, XMMATRIX* const camera)
+D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECTOR3* const angle,
+	D3DXVECTOR3* const scale, D3DXMATRIX* const camera)
 {
-	XMMATRIX mat = XMMatrixIdentity();
+	D3DXMATRIX mat;
+	D3DXMatrixIdentity(&mat);
 	if (scale->x != 1.0f || scale->y != 1.0f || scale->z != 1.0f) {
-		mat = XMMatrixMultiply(mat, XMMatrixScaling(scale->x, scale->y, scale->z));
+		D3DXMatrixScaling(&mat, scale->x, scale->y, scale->z);
 	}
 	if (angle->x != 0.0f || angle->y != 0.0f || angle->z != 0.0f) {
-		XMVECTOR vecSin, vecCos;
-		XMVectorSinCos(&vecSin, &vecCos, XMVectorSet(angle->x, angle->y, angle->z, 0.0f));
-		float cx = vecCos.m128_f32[0];
-		float sx = vecSin.m128_f32[0];
-		float cy = vecCos.m128_f32[1];
-		float sy = vecSin.m128_f32[1];
-		float cz = vecCos.m128_f32[2];
-		float sz = vecSin.m128_f32[2];
-		float sx_sy = sx * sy;
-		float sx_cy = sx * cy;
-
-		XMVECTOR vecA = XMVectorMultiply(XMVectorSet(cy, sx_sy, cx, sy), XMVectorSet(cz, sz, sz, cz));
-		XMVECTOR vecB = XMVectorMultiply(XMVectorSet(sx_cy, cy, sx_sy, cx), XMVectorSet(sz, sz, cz, cz));
-		XMVECTOR vecC = XMVectorMultiply(XMVectorSet(sy, sx_cy, cx, cx), XMVectorSet(sz, cz, sy, cy));
-		float* _a = vecA.m128_f32;
-		float* _b = vecB.m128_f32;
-		float* _c = vecC.m128_f32;
-
-		XMMATRIX matRotation;
-		matRotation.r[0] = XMVectorSet(_a[0] - _a[1], -_a[2], _a[3] + _b[0], 0.0f);
-		matRotation.r[1] = XMVectorSet(_b[1] + _b[2], _b[3], _c[0] - _c[1], 0.0f);
-		matRotation.r[2] = XMVectorSet(-_c[2], vecCos.m128_f32[0], _c[3], 0.0f);
-		matRotation.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-
-		mat = XMMatrixMultiply(mat, matRotation);
+		D3DXMATRIX matRot;
+		D3DXMatrixRotationYawPitchRoll(&matRot, angle->y, angle->x, angle->z);
+		D3DXMatrixMultiply(&mat, &mat, &matRot);
 	}
 	if (position->x != 0.0f || position->y != 0.0f || position->z != 0.0f) {
-		//mat = XMMatrixMultiply(mat, XMMatrixTranslation(position->x, position->y, position->z));
-		mat.r[3] = XMVectorSet(position->x, position->y, position->z, 1.0f);
+		mat._41 = position->x;
+		mat._42 = position->y;
+		mat._43 = position->z;
 	}
-	if (camera) mat = XMMatrixMultiply(mat, *camera);
+	if (camera) D3DXMatrixMultiply(&mat, &mat, camera);
 	return mat;
 }
-XMMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECTOR2* const angleX,
-	D3DXVECTOR2* const angleY, D3DXVECTOR2* const angleZ, D3DXVECTOR3* const scale, XMMATRIX* const camera)
+D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECTOR2* const angleX,
+	D3DXVECTOR2* const angleY, D3DXVECTOR2* const angleZ, D3DXVECTOR3* const scale, D3DXMATRIX* const camera)
 {
-	XMMATRIX mat = XMMatrixIdentity();
+	D3DXMATRIX mat;
+	D3DXMatrixIdentity(&mat);
 	if (scale->x != 1.0f || scale->y != 1.0f || scale->z != 1.0f) {
-		mat = XMMatrixMultiply(mat, XMMatrixScaling(scale->x, scale->y, scale->z));
+		D3DXMatrixScaling(&mat, scale->x, scale->y, scale->z);
 	}
+	if (angleZ->x != 1.0f || angleZ->y != 0.0f || angleX->x != 1.0f || angleX->y != 0.0f 
+		|| angleY->x != 1.0f || angleY->y != 0.0f)
 	{
+		D3DXMATRIX matRot;
+
 		float cx = angleX->x;
 		float sx = angleX->y;
 		float cy = angleY->x;
@@ -95,26 +80,44 @@ XMMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECT
 		float sx_sy = sx * sy;
 		float sx_cy = sx * cy;
 
-		XMVECTOR vecA = XMVectorMultiply(XMVectorSet(cy, sx_sy, cx, sy), XMVectorSet(cz, sz, sz, cz));
-		XMVECTOR vecB = XMVectorMultiply(XMVectorSet(sx_cy, cy, sx_sy, cx), XMVectorSet(sz, sz, cz, cz));
-		XMVECTOR vecC = XMVectorMultiply(XMVectorSet(sy, sx_cy, cx, cx), XMVectorSet(sz, cz, sy, cy));
-		float* _a = vecA.m128_f32;
-		float* _b = vecB.m128_f32;
-		float* _c = vecC.m128_f32;
+#ifdef __L_MATH_VECTORIZE
+		__m128 v1 = Vectorize::Mul(Vectorize::Set(cy, sx_sy, cx, sy), Vectorize::Set(cz, sz, sz, cz));
+		__m128 v2 = Vectorize::Mul(Vectorize::Set(sx_cy, cy, sx_sy, cx), Vectorize::Set(sz, sz, cz, cz));
+		__m128 v3 = Vectorize::Mul(Vectorize::Set(sy, sx_cy, cx, cx), Vectorize::Set(sz, cz, sy, cy));
 
-		XMMATRIX matRotation;
-		matRotation.r[0] = XMVectorSet(_a[0] - _a[1], -_a[2], _a[3] + _b[0], 0.0f);
-		matRotation.r[1] = XMVectorSet(_b[1] + _b[2], _b[3], _c[0] - _c[1], 0.0f);
-		matRotation.r[2] = XMVectorSet(-_c[2], angleX->y, _c[3], 0.0f);
-		matRotation.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		matRot._12 = -v1.m128_f32[2];
+		matRot._22 = v2.m128_f32[3];
+		matRot._31 = -v3.m128_f32[2];
+		matRot._32 = sx;
+		matRot._33 = v3.m128_f32[3];
 
-		mat = XMMatrixMultiply(mat, matRotation);
+		v1 = Vectorize::AddSub(
+			Vectorize::Set(v1.m128_f32[0], v1.m128_f32[3], v3.m128_f32[0], v2.m128_f32[1]),
+			Vectorize::Set(v1.m128_f32[1], v2.m128_f32[0], v3.m128_f32[1], v2.m128_f32[2]));
+		matRot._11 = v1.m128_f32[0];
+		matRot._13 = v1.m128_f32[1];
+		matRot._21 = v1.m128_f32[3];
+		matRot._23 = v1.m128_f32[2];
+#else
+		matRot._11 = cy * cz - sx_sy * sz;
+		matRot._12 = -cx * sz;
+		matRot._13 = sy * cz + sx_cy * sz;
+		matRot._21 = cy * sz + sx_sy * cz;
+		matRot._22 = cx * cz;
+		matRot._23 = sy * sz - sx_cy * cz;
+		matRot._31 = -cx * sy;
+		matRot._32 = sx;
+		matRot._33 = cx * cy;
+#endif
+
+		D3DXMatrixMultiply(&mat, &mat, &matRot);
 	}
 	if (position->x != 0.0f || position->y != 0.0f || position->z != 0.0f) {
-		//mat = XMMatrixMultiply(mat, XMMatrixTranslation(position->x, position->y, position->z));
-		mat.r[3] = XMVectorSet(position->x, position->y, position->z, 1.0f);
+		mat._41 = position->x;
+		mat._42 = position->y;
+		mat._43 = position->z;
 	}
-	if (camera) mat = XMMatrixMultiply(mat, *camera);
+	if (camera) D3DXMatrixMultiply(&mat, &mat, camera);
 	return mat;
 }
 size_t RenderObject::GetPrimitiveCount(D3DPRIMITIVETYPE type, size_t count) {
@@ -168,6 +171,8 @@ VertexTLX* RenderObject::GetVertex(size_t index) {
 //StaticRenderObject
 //*******************************************************************
 StaticRenderObject::StaticRenderObject() {
+	scroll_ = D3DXVECTOR2(0, 0);
+
 	Initialize();
 }
 StaticRenderObject::~StaticRenderObject() {
@@ -181,8 +186,8 @@ void StaticRenderObject::Initialize() {
 }
 void StaticRenderObject::Update() {
 }
-void StaticRenderObject::Render() {
-	if (shader_ == nullptr) return;
+HRESULT StaticRenderObject::Render() {
+	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
 
 	WindowMain* window = WindowMain::GetBase();
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
@@ -190,18 +195,20 @@ void StaticRenderObject::Render() {
 	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
 	window->SetBlendMode(blend_);
 
-	XMMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
+	D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
 		&angleZ_, &scale_, nullptr);
 
 	ID3DXEffect* effect = shader_->GetEffect();
 	{
 		D3DXHANDLE handle = nullptr;
 		if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
-			effect->SetMatrix(handle, (D3DXMATRIX*)&matWorld);
+			effect->SetMatrix(handle, &matWorld);
 		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
-			effect->SetMatrix(handle, (D3DXMATRIX*)window->GetViewportMatrix());
+			effect->SetMatrix(handle, window->GetViewportMatrix());
 		if (handle = effect->GetParameterBySemantic(nullptr, "OBJCOLOR"))
 			effect->SetVector(handle, &color_);
+		if (handle = effect->GetParameterBySemantic(nullptr, "UVSCROLL"))
+			effect->SetFloatArray(handle, (float*)&scroll_, 2U);
 	}
 
 	shader_->SetTechnique("Render");
@@ -218,7 +225,8 @@ void StaticRenderObject::Render() {
 		if (bIndex) device->SetIndices(bufferIndex_->GetBuffer());
 
 		UINT countPass = 1;
-		effect->Begin(&countPass, 0);
+		HRESULT hr = effect->Begin(&countPass, 0);
+		if (FAILED(hr)) return hr;
 		for (UINT iPass = 0; iPass < countPass; ++iPass) {
 			effect->BeginPass(iPass);
 
@@ -233,6 +241,8 @@ void StaticRenderObject::Render() {
 	}
 
 	device->SetVertexDeclaration(nullptr);
+
+	return S_OK;
 }
 
 void StaticRenderObject::UpdateVertexBuffer() {

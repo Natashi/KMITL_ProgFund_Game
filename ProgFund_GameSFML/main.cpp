@@ -40,7 +40,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		printf("Initialized application.\n");
 
 		{
-			Menu_TaskHost* menuScene = new Menu_TaskHost(sceneManager);
+			Menu_Scene* menuScene = new Menu_Scene(sceneManager);
 			menuScene->SetType(Scene::Type::Menu);
 			sceneManager->AddScene(menuScene, (size_t)Scene::Type::Menu);
 			printf("Initialized game.\n");
@@ -83,11 +83,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 						sceneManager->Render();
 						/*
 						{
-							//Render the FPS counter
-							window->pushGLStates();
-							winMain->SetBlendMode(BlendMode::Alpha);
-							window->draw(fpsCounter);
-							window->popGLStates();
+							//Render the FPS counter here, eww text rendering stinky
 						}
 						*/
 						winMain->EndScene();
@@ -96,7 +92,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 						previous_time = DxGetTime();
 
 						if (!sceneManager->IsAnyActive())
-							msg.message = WM_QUIT;
+							msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
 					}
 
 					//2 fps updates per second, hopefully

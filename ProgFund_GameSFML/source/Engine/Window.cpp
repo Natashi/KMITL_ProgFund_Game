@@ -17,9 +17,9 @@ WindowMain::WindowMain() {
 
 	vertexManager_ = nullptr;
 
-	matView_ = XMMatrixIdentity();
-	matProjection_ = XMMatrixIdentity();
-	matViewport_ = XMMatrixIdentity();
+	D3DXMatrixIdentity(&matView_);
+	D3DXMatrixIdentity(&matProjection_);
+	D3DXMatrixIdentity(&matViewport_);
 
 	previousBlendMode_ = (BlendMode)0xff;
 
@@ -59,7 +59,7 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 
 		hWnd_ = CreateWindowW(L"DxWindowClass", L"Re: Mystic Square",
 			WS_OVERLAPPEDWINDOW - WS_SIZEBOX,
-			200, 200, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInst_, nullptr);
+			100, 100, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInst_, nullptr);
 		if (!hWnd_)
 			throw EngineError("Failed to open a window.");
 
@@ -211,9 +211,9 @@ void WindowMain::SetViewPort(float x, float y, float w, float h, float zn, float
 	viewPort.MinZ = 0.0f;
 	viewPort.MaxZ = 1.0f;
 	pDevice_->SetViewport(&viewPort);
-	matProjection_ = XMMatrixPerspectiveFovLH(XM_PIDIV4, w / h, zn, zf);
+	D3DXMatrixPerspectiveFovLH(&matProjection_, GM_PI_4, w / h, zn, zf);
 	{
-		matViewport_ = XMMatrixIdentity();
+		D3DXMatrixIdentity(&matViewport_);
 		matViewport_._11 = 2.0f / w;
 		matViewport_._22 = -2.0f / h;
 		matViewport_._33 = -2.0f / (zf - zn);

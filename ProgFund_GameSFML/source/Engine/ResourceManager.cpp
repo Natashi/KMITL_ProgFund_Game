@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "Utility.hpp"
 #include "ResourceManager.hpp"
 #include "Window.hpp"
 #include "Vertex.hpp"

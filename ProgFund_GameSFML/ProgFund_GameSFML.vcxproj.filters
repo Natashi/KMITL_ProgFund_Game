@@ -80,5 +80,8 @@
     <ClInclude Include="source\Engine\Object.hpp">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="source\Engine\VectorExtensions.hpp">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

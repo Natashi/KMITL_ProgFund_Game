@@ -1,6 +1,8 @@
 #pragma once
 #include "../../pch.h"
 
+#include "Utility.hpp"
+
 class ResourceManager;
 class Resource {
 	friend class ResourceManager;
@@ -122,6 +124,12 @@ public:
 
 	void AddResource(shared_ptr<Resource> resource, const std::string& path);
 	void RemoveResource(const std::string& path);
+	template<typename T> inline shared_ptr<T> LoadResource(const std::string& path, const std::string& name) {
+		shared_ptr<T> res = std::make_shared<T>();
+		res->LoadFromFile(PathProperty::GetModuleDirectory() + path);
+		this->AddResource(res, name);
+		return res;
+	}
 
 	shared_ptr<Resource> GetResource(const std::string& path);
 	template<class T> shared_ptr<T> GetResourceAs(const std::string& path) {
