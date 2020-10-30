@@ -3,13 +3,14 @@
 
 #include "GConstant.hpp"
 
-class Menu_Scene : public Scene {
-public:
-	Menu_Scene(SceneManager* manager);
-	~Menu_Scene();
-};
+#include "System.hpp"
 
 //Splash task
+class Menu_SplashScene : public Scene {
+public:
+	Menu_SplashScene(SceneManager* manager);
+	~Menu_SplashScene();
+};
 class Menu_SplashTask : public TaskBase {
 public:
 	Menu_SplashTask(Scene* parent);
@@ -23,33 +24,63 @@ private:
 };
 
 //Menu tasks
-class Menu_MainTask;
-class Menu_Main_Items : public TaskBase {
-	friend class Menu_MainTask;
+class Menu_MainScene : public Scene {
 public:
-	Menu_Main_Items(Scene* parent, CD3DXVECTOR2 pos, size_t index, size_t imgId);
+	Menu_MainScene(SceneManager* manager);
+	~Menu_MainScene();
 
 	virtual void Render();
 	virtual void Update();
 
-	void SetSelectIndexPointer(int* ptr) { pSelectIndex_ = ptr; }
+	void SaveConfig();
+	void LoadConfig();
 private:
-	Sprite2D itemObj_;
-	Sprite2D itemObjBack_;
-	size_t index_;
-	int* pSelectIndex_;
-
-	float selectScale_;
-};
-class Menu_MainTask : public TaskBase {
-public:
-	Menu_MainTask(Scene* parent);
-	~Menu_MainTask();
-
-	virtual void Render();
-	virtual void Update();
-private:
+	shared_ptr<SoundResource> musicBackground_;
 	Sprite2D objBackground_;
-	std::vector<Menu_Main_Items*> listMenuObj_;
+};
+
+class Menu_Child_RankMenu;
+
+class Menu_Child_ParentMenu_Item;
+class Menu_Child_ParentMenu : public TaskBase {
+public:
+	Menu_Child_ParentMenu(Menu_MainScene* parent);
+	~Menu_Child_ParentMenu();
+
+	virtual void Render();
+	virtual void Update();
+protected:
+	std::vector<Menu_Child_ParentMenu_Item*> listMenuObj_;
+	bool flgGetInput_ = false;
+	int selectIndex_;
+};
+
+class Menu_Child_RankMenu_Item;
+class Menu_Child_RankMenu : public TaskBase {
+public:
+	Menu_Child_RankMenu(Menu_MainScene* parent);
+	~Menu_Child_RankMenu();
+
+	virtual void Render();
+	virtual void Update();
+protected:
+	std::vector<Menu_Child_RankMenu_Item*> listRankObj_;
+	bool flgGetInput_ = false;
+	int selectIndex_;
+};
+
+class Menu_Child_OptionMenu_Item_Sound;
+class Menu_Child_OptionMenu_Item_Stat;
+class Menu_Child_OptionMenu : public TaskBase {
+public:
+	Menu_Child_OptionMenu(Menu_MainScene* parent);
+	~Menu_Child_OptionMenu();
+
+	virtual void Render();
+	virtual void Update();
+protected:
+	std::vector<Menu_Child_OptionMenu_Item_Sound*> listOptionObjSound_;
+	std::vector<Menu_Child_OptionMenu_Item_Stat*> listOptionObjStat_;
+	bool flgGetInput_ = false;
 	int selectIndex_;
 };

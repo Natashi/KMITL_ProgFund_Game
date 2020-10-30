@@ -299,7 +299,7 @@ void Sprite2D::Initialize() {
 	vertex_.resize(4U, VertexTLX());
 }
 
-void Sprite2D::SetSourceRectNormalized(const DxRect& rc) {
+void Sprite2D::SetSourceRectNormalized(const DxRect<float>& rc) {
 	GetVertex(0)->texcoord = D3DXVECTOR2(rc.left, rc.top);
 	GetVertex(1)->texcoord = D3DXVECTOR2(rc.right, rc.top);
 	GetVertex(2)->texcoord = D3DXVECTOR2(rc.left, rc.bottom);
@@ -307,7 +307,7 @@ void Sprite2D::SetSourceRectNormalized(const DxRect& rc) {
 
 	//UpdateVertexBuffer();
 }
-void Sprite2D::SetSourceRect(const DxRect& rc) {
+void Sprite2D::SetSourceRect(const DxRect<int>& rc) {
 	float width = texture_->GetImageInfo()->Width;
 	float height = texture_->GetImageInfo()->Height;
 
@@ -318,7 +318,7 @@ void Sprite2D::SetSourceRect(const DxRect& rc) {
 
 	//UpdateVertexBuffer();
 }
-void Sprite2D::SetDestRect(const DxRect& rc) {
+void Sprite2D::SetDestRect(const DxRect<float>& rc) {
 	GetVertex(0)->position = D3DXVECTOR3(rc.left, rc.top, 1.0f);
 	GetVertex(1)->position = D3DXVECTOR3(rc.right, rc.top, 1.0f);
 	GetVertex(2)->position = D3DXVECTOR3(rc.left, rc.bottom, 1.0f);

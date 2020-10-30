@@ -14,6 +14,10 @@ public:
 		Sound,
 		Shader,
 	};
+protected:
+	ResourceManager* manager_;
+	Type type_;
+	std::string path_;
 public:
 	Resource();
 	virtual ~Resource();
@@ -28,11 +32,8 @@ public:
 
 	void SetPath(const std::string& path) { path_ = path; }
 	std::string GetPath() { return path_; }
-protected:
-	ResourceManager* manager_;
-	Type type_;
-	std::string path_;
 };
+
 /*
 class FontResource : public Resource {
 public:
@@ -46,7 +47,12 @@ protected:
 	sf::Font font_;
 };
 */
+
 class TextureResource : public Resource {
+protected:
+	D3DXIMAGE_INFO infoImage_;
+	IDirect3DTexture9* texture_;
+	IDirect3DSurface9* surface_;
 public:
 	TextureResource();
 
@@ -61,24 +67,34 @@ public:
 
 	IDirect3DTexture9* GetTexture() { return texture_; }
 	IDirect3DSurface9* GetSurface() { return surface_; }
-protected:
-	D3DXIMAGE_INFO infoImage_;
-	IDirect3DTexture9* texture_;
-	IDirect3DSurface9* surface_;
 };
-/*
+
+class DxSoundSource;
 class SoundResource : public Resource {
+public:
+	enum class Type : uint8_t {
+		Unknown,
+		Wave,
+		OggVorbis,
+	};
+protected:
+	std::ifstream* file_;
+	DxSoundSource* buffer_;
+	Type typeSound_;
 public:
 	SoundResource();
 
 	virtual void LoadFromFile(const std::string& path);
 	virtual void UnloadResource();
 
-	sf::SoundBuffer* GetData() { return &buffer_; }
-protected:
-	sf::SoundBuffer buffer_;
+	bool Play();
+	bool Pause();
+	bool Stop();
+
+	DxSoundSource* GetData() { return buffer_; }
+	Type GetSoundType() { return typeSound_; }
 };
-*/
+
 class ShaderResource : public Resource {
 public:
 	enum class Type : uint8_t {

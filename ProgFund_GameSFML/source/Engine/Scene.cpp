@@ -7,6 +7,7 @@
 //*******************************************************************
 SceneManager* SceneManager::base_ = nullptr;
 SceneManager::SceneManager() {
+	primaryScene_ = nullptr;
 }
 SceneManager::~SceneManager() {
 }
@@ -14,50 +15,53 @@ void SceneManager::Initialize() {
 	if (base_) throw EngineError("SceneManager already initialized.");
 	base_ = this;
 
+	primaryScene_ = std::make_shared<Scene>(this);
 	listScene_.resize(MAX_SCENE_SPACE);
 }
 void SceneManager::Release() {
-	for (Scene*& iScene : listScene_)
-		ptr_delete(iScene);
+	listScene_.clear();
 }
 void SceneManager::Render() {
-	for (Scene* iScene : listScene_) {
+	primaryScene_->Render();
+	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene)
 			iScene->Render();
 	}
 }
 void SceneManager::Update() {
+	primaryScene_->Update();
+
 	size_t i = 0;
-	for (size_t i = 0; i < listScene_.size(); ++i) {
-		Scene* iScene = listScene_[i];
+	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene) {
 			iScene->Update();
 			if (iScene->IsAutoDelete() && iScene->GetTaskCount() == 0)
-				RemoveScene(i);
+				iScene = nullptr;
 		}
 	}
 }
-void SceneManager::AddScene(Scene* ptrScene, size_t indexScene) {
+void SceneManager::AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool bReplace) {
 	if (indexScene >= MAX_SCENE_SPACE)
 		throw EngineError(StringUtility::Format("Scene index out of bounds: %u", indexScene));
-	else if (listScene_[indexScene])
+	else if (!bReplace && listScene_[indexScene])
 		throw EngineError(StringUtility::Format("Scene already exists: %u", indexScene));
 	listScene_[indexScene] = ptrScene;
 }
 void SceneManager::RemoveScene(size_t indexScene) {
-	ptr_delete(listScene_[indexScene]);
+	listScene_[indexScene] = nullptr;
 }
-void SceneManager::RemoveScene(Scene* ptrScene) {
-	for (auto iScene = listScene_.begin(); iScene != listScene_.end(); ++iScene) {
-		if (*iScene == ptrScene) {
-			ptr_delete(*iScene);
+void SceneManager::RemoveScene(shared_ptr<Scene> ptrScene) {
+	for (shared_ptr<Scene>& iScene : listScene_) {
+		if (iScene == ptrScene) {
+			iScene = nullptr;
 			return;
 		}
 	}
 }
 bool SceneManager::IsAnyActive() {
-	for (auto iScene = listScene_.begin(); iScene != listScene_.end(); ++iScene) {
-		if (*iScene) return true;
+	for (shared_ptr<Scene>& iScene : listScene_) {
+		if (iScene)
+			return true;
 	}
 	return false;
 }
@@ -67,6 +71,7 @@ bool SceneManager::IsAnyActive() {
 //*******************************************************************
 Scene::Scene(SceneManager* manager) {
 	manager_ = manager;
+	frame_ = 0U;
 	type_ = Type::Unknown;
 	bEnableRender_ = true;
 	bEnableUpdate_ = true;
@@ -77,10 +82,9 @@ Scene::~Scene() {
 }
 void Scene::Render() {
 	if (!bEnableRender_) return;
-	for (auto itr = listTask_.begin(); itr != listTask_.end(); ++itr) {
-		shared_ptr<TaskBase> task = *itr;
-		if (task && !task->IsFinished())
-			task->Render();
+	for (shared_ptr<TaskBase>& iTask : listTask_) {
+		if (iTask && !iTask->IsFinished())
+			iTask->Render();
 	}
 }
 void Scene::Update() {
@@ -95,6 +99,7 @@ void Scene::Update() {
 		}
 		else itr = listTask_.erase(itr);
 	}
+	++frame_;
 }
 std::list<shared_ptr<TaskBase>>::iterator Scene::AddTask(shared_ptr<TaskBase> task) {
 	listTask_.push_back(task);

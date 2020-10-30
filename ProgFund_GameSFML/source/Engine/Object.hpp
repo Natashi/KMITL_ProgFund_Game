@@ -17,6 +17,13 @@ enum class TypeObject : uint8_t {
 };
 
 class ObjectBase {
+private:
+	TypeObject type_;
+	size_t renderPri_;
+	bool bVisible_;
+	bool bDeleted_;
+
+	std::unordered_map<std::string, DWORD> mapObjectValue_;
 public:
 	ObjectBase();
 	virtual ~ObjectBase();
@@ -38,16 +45,26 @@ public:
 	DWORD GetObjectValue(const std::string& key) { return mapObjectValue_[key]; }
 	void SetObjectValue(const std::string& key, DWORD val) { mapObjectValue_[key] = val; }
 	void DeleteObjectValue(const std::string& key) { mapObjectValue_.erase(key); }
-private:
-	TypeObject type_;
-	size_t renderPri_;
-	bool bVisible_;
-	bool bDeleted_;
-
-	std::unordered_map<std::string, DWORD> mapObjectValue_;
 };
 
 class RenderObject : public ObjectBase {
+protected:
+	D3DXVECTOR3 position_;
+	D3DXVECTOR3 angle_;
+	D3DXVECTOR2 angleX_;	//[cos, sin]
+	D3DXVECTOR2 angleY_;	//[cos, sin]
+	D3DXVECTOR2 angleZ_;	//[cos, sin]
+	D3DXVECTOR3 scale_;
+	D3DXVECTOR4 color_;
+
+	shared_ptr<TextureResource> texture_;
+	shared_ptr<ShaderResource> shader_;
+
+	D3DPRIMITIVETYPE primitiveType_;
+	BlendMode blend_;
+
+	std::vector<VertexTLX> vertex_;
+	std::vector<uint16_t> index_;
 public:
 	RenderObject();
 	virtual ~RenderObject();
@@ -122,26 +139,13 @@ public:
 
 	virtual void SetArrayVertex(const std::vector<VertexTLX>& vertices) { vertex_ = vertices; }
 	virtual void SetArrayIndex(const std::vector<uint16_t>& indices) { index_ = indices; }
-protected:
-	D3DXVECTOR3 position_;
-	D3DXVECTOR3 angle_;
-	D3DXVECTOR2 angleX_;	//[cos, sin]
-	D3DXVECTOR2 angleY_;	//[cos, sin]
-	D3DXVECTOR2 angleZ_;	//[cos, sin]
-	D3DXVECTOR3 scale_;
-	D3DXVECTOR4 color_;
-
-	shared_ptr<TextureResource> texture_;
-	shared_ptr<ShaderResource> shader_;
-
-	D3DPRIMITIVETYPE primitiveType_;
-	BlendMode blend_;
-
-	std::vector<VertexTLX> vertex_;
-	std::vector<uint16_t> index_;
 };
 
 class StaticRenderObject : public RenderObject {
+protected:
+	shared_ptr<DxVertexBuffer> bufferVertex_;
+	shared_ptr<DxIndexBuffer> bufferIndex_;
+	D3DXVECTOR2 scroll_;
 public:
 	StaticRenderObject();
 	virtual ~StaticRenderObject();
@@ -162,27 +166,23 @@ public:
 	void SetScroll(CD3DXVECTOR2 scroll) { scroll_ = scroll; }
 	void SetScrollX(float x) { scroll_.x = x; }
 	void SetScrollY(float y) { scroll_.y = y; }
-protected:
-	shared_ptr<DxVertexBuffer> bufferVertex_;
-	shared_ptr<DxIndexBuffer> bufferIndex_;
-	D3DXVECTOR2 scroll_;
 };
 //class DynamicRenderObject
 
 class Sprite2D : public StaticRenderObject {
+private:
+	bool bPermitCamera_;
 public:
 	Sprite2D();
 	~Sprite2D();
 
 	virtual void Initialize();
 
-	void SetSourceRectNormalized(const DxRect& rc);
-	void SetSourceRect(const DxRect& rc);
-	void SetDestRect(const DxRect& rc);
+	void SetSourceRectNormalized(const DxRect<float>& rc);
+	void SetSourceRect(const DxRect<int>& rc);
+	void SetDestRect(const DxRect<float>& rc);
 	void SetDestCenter();
 
 	bool IsPermitCamera() { return bPermitCamera_; }
 	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
-private:
-	bool bPermitCamera_;
 };

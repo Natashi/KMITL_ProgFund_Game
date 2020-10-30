@@ -29,14 +29,14 @@ class SceneManager;
 class Scene {
 	friend class SceneManager;
 public:
-	enum class Type : uint8_t {
+	typedef enum : uint8_t {
 		Menu,
 		StageUI,
 		Stage,
 		Background,
 		Pause,
 		Unknown,
-	};
+	} Type;
 public:
 	Scene(SceneManager* manager);
 	virtual ~Scene();
@@ -57,12 +57,15 @@ public:
 	void SetType(Type t) { type_ = t; }
 	Type GetType() { return type_; }
 
+	size_t GetFrame() { return frame_; }
+
 	size_t GetTaskCount() { return listTask_.size(); }
 
 	std::list<shared_ptr<TaskBase>>::iterator AddTask(shared_ptr<TaskBase> task);
 	std::list<shared_ptr<TaskBase>>::iterator AddTask(std::list<shared_ptr<TaskBase>>::iterator itr, shared_ptr<TaskBase> task);
 protected:
 	SceneManager* manager_;
+	size_t frame_;
 	Type type_;
 	bool bEnableRender_;
 	bool bEnableUpdate_;
@@ -75,7 +78,7 @@ class SceneManager {
 	static SceneManager* base_;
 public:
 	enum {
-		MAX_SCENE_SPACE = 8,
+		MAX_SCENE_SPACE = 12,
 	};
 public:
 	SceneManager();
@@ -89,11 +92,14 @@ public:
 	void Render();
 	void Update();
 
-	void AddScene(Scene* ptrScene, size_t indexScene);
+	shared_ptr<Scene> GetPrimaryScene() { return primaryScene_; }
+
+	void AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool bReplace = false);
 	void RemoveScene(size_t indexScene);
-	void RemoveScene(Scene* ptrScene);
+	void RemoveScene(shared_ptr<Scene> ptrScene);
 
 	bool IsAnyActive();
 private:
-	std::vector<Scene*> listScene_;
+	shared_ptr<Scene> primaryScene_;
+	std::vector<shared_ptr<Scene>> listScene_;
 };

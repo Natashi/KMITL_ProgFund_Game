@@ -18,6 +18,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		winMain->Initialize(hInstance);
 		hWnd = winMain->GetHandle();
 
+		CommonDataManager* valueManager = new CommonDataManager();
+		valueManager->Initialize();
+
 		ResourceManager* resourceManager = new ResourceManager();
 		resourceManager->Initialize();
 		/*
@@ -31,6 +34,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 		*/
 
+		SoundManager* soundManager = new SoundManager();
+		soundManager->Initialize(winMain->GetHandle());
+
 		InputManager* inputManager = new InputManager();
 		inputManager->Initialize();
 
@@ -40,9 +46,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		printf("Initialized application.\n");
 
 		{
-			Menu_Scene* menuScene = new Menu_Scene(sceneManager);
+			shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
 			menuScene->SetType(Scene::Type::Menu);
-			sceneManager->AddScene(menuScene, (size_t)Scene::Type::Menu);
+			sceneManager->AddScene(menuScene, Scene::Type::Menu);
 			printf("Initialized game.\n");
 		}
 
@@ -118,7 +124,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		printf("Finalizing application...\n");
 
+		ptr_release(valueManager);
 		ptr_release(resourceManager);
+		ptr_release(soundManager);
 		ptr_release(sceneManager);
 		ptr_release(inputManager);
 		ptr_release(winMain);

@@ -2,6 +2,7 @@
 #include "ResourceManager.hpp"
 #include "Window.hpp"
 #include "Vertex.hpp"
+#include "Sound.hpp"
 
 //*******************************************************************
 //ResourceManager
@@ -136,7 +137,7 @@ void TextureResource::LoadFromFile(const std::string& path, bool bMipmap) {
 
 	auto WrapError = [&](HRESULT hr) {
 		if (FAILED(hr))
-			throw EngineError(StringUtility::Format("Failed to load texture resource [%s]\n\t[%s]",
+			throw EngineError(StringUtility::Format("Failed to load texture resource [%s]\n\t%s",
 				path.c_str(), ErrorUtility::StringFromHResult(hr).c_str()));
 	};
 
@@ -158,7 +159,7 @@ void TextureResource::CreateAsRenderTarget(const std::string& name, size_t width
 
 	auto WrapError = [&](HRESULT hr) {
 		if (FAILED(hr))
-			throw EngineError(StringUtility::Format("Failed to create render target [%s]\n\t[%s]",
+			throw EngineError(StringUtility::Format("Failed to create render target [%s]\n\t%s",
 				name.c_str(), ErrorUtility::StringFromHResult(hr).c_str()));
 	};
 
@@ -187,6 +188,103 @@ void TextureResource::UnloadResource() {
 	ptr_release(texture_);
 }
 
+//*******************************************************************
+//SoundResource
+//*******************************************************************
+SoundResource::SoundResource() {
+	type_ = Resource::Type::Sound;
+	file_ = nullptr;
+	buffer_ = nullptr;
+	typeSound_ = Type::Unknown;
+}
+void SoundResource::LoadFromFile(const std::string& path) {
+	path_ = path;
+
+	auto SetError = [&](const std::string& error) {
+		throw EngineError(StringUtility::Format("Failed to load sound resource [%s]\n\t%s",
+			path.c_str(), error.c_str()));
+	};
+
+	GET_INSTANCE(SoundManager, soundManager);
+
+	file_ = new std::ifstream();
+	file_->open(path, std::ios::binary);
+	if (!file_->is_open())
+		SetError("Cannot open file for reading.");
+
+	file_->seekg(0, std::ios::end);
+	size_t fileSize = file_->tellg();
+	file_->seekg(0, std::ios::beg);
+
+	if (fileSize <= 0x100)
+		SetError("Invalid file.");
+
+	{
+		char header[0x100];
+		file_->read(header, 0x100);
+
+		if (memcmp(header, "RIFF", 4) == 0) {
+			typeSound_ = Type::Wave;
+
+			size_t ptr = 0xC;
+			while (ptr <= 0x100) {
+				size_t chkSize = *(uint32_t*)&header[ptr + sizeof(uint32_t)];
+				if (memcmp(&header[ptr], "fmt ", 4) == 0 && chkSize >= 0x10) {
+					WAVEFORMATEX* wavefmt = (WAVEFORMATEX*)&header[ptr + sizeof(uint32_t) * 2];
+					if (wavefmt->wFormatTag != WAVE_FORMAT_PCM)
+						SetError("Unsupported wave format.");
+					break;
+				}
+				ptr += chkSize + sizeof(uint32_t);
+			}
+		}
+		else if (memcmp(header, "OggS", 4) == 0) {
+			typeSound_ = Type::OggVorbis;
+		}
+	}
+
+	switch (typeSound_) {
+	case Type::Wave:
+		buffer_ = new DxSoundSourceWave();
+		break;
+	case Type::OggVorbis:
+		buffer_ = new DxSoundSourceStreamerOgg();
+		break;
+	}
+
+	if (buffer_) {
+		buffer_->SetManager(SoundManager::GetBase());
+		buffer_->SetSource(file_);
+		if (!buffer_->_CreateBuffer())
+			goto lab_sound_fail;
+		return;
+	}
+lab_sound_fail:
+	SetError("Invalid or unsupported sound file; cannot create sound buffer.");
+}
+void SoundResource::UnloadResource() {
+	ptr_delete(buffer_);
+	if (file_) {
+		file_->close();
+		delete file_;
+		file_ = nullptr;
+	}
+}
+bool SoundResource::Play() {
+	if (buffer_)
+		return buffer_->Play();
+	return false;
+}
+bool SoundResource::Pause() {
+	if (buffer_)
+		return buffer_->Pause();
+	return false;
+}
+bool SoundResource::Stop() {
+	if (buffer_)
+		return buffer_->Stop();
+	return false;
+}
 /*
 //*******************************************************************
 //SoundResource
@@ -241,7 +339,7 @@ void ShaderResource::LoadFromFile(const std::string& path, Type type) {
 	auto WrapError = [&](HRESULT hr) {
 		if (FAILED(hr)) {
 			std::string effectError = std::string((LPCSTR)pError->GetBufferPointer(), pError->GetBufferSize());
-			throw EngineError(StringUtility::Format("Failed to load shader resource [%s][type=%s]\n\t[%s]\n%s",
+			throw EngineError(StringUtility::Format("Failed to load shader resource [%s][type=%s]\n\t%s\n%s",
 				path.c_str(), strType, ErrorUtility::StringFromHResult(hr).c_str(), effectError.c_str()));
 		}
 	};

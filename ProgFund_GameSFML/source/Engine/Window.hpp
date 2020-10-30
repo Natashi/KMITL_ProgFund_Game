@@ -20,6 +20,29 @@ enum class TextureSample : uint8_t {
 };
 class WindowMain {
 	static WindowMain* base_;
+private:
+	HINSTANCE hInst_;
+	HWND hWnd_;
+
+	HANDLE hTimerQueue_;
+
+	IDirect3D9* pDirect3D_;
+	IDirect3DDevice9* pDevice_;
+
+	IDirect3DSurface9* pBackBuffer_;
+	IDirect3DSurface9* pZBuffer_;
+
+	VertexDeclarationManager* vertexManager_;
+
+	D3DXMATRIX matView_;
+	D3DXMATRIX matProjection_;
+	D3DXMATRIX matViewport_;
+
+	BlendMode previousBlendMode_;
+
+	float fps_;
+
+	static LRESULT CALLBACK StaticWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 public:
 	WindowMain();
 	~WindowMain();
@@ -33,6 +56,8 @@ public:
 	void EndScene(bool bPresent = true);
 
 	HWND GetHandle() { return hWnd_; }
+
+	HANDLE GetTimerQueue() { return hTimerQueue_; }
 
 	IDirect3DDevice9* const GetDevice() { return pDevice_; }
 
@@ -52,25 +77,4 @@ public:
 
 	void SetZBufferMode(bool bWrite, bool bUse);
 	void SetTextureFilter(D3DTEXTUREFILTERTYPE min, D3DTEXTUREFILTERTYPE mag, D3DTEXTUREFILTERTYPE mip = D3DTEXF_LINEAR);
-private:
-	static LRESULT CALLBACK StaticWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-private:
-	HINSTANCE hInst_;
-	HWND hWnd_;
-
-	IDirect3D9* pDirect3D_;
-	IDirect3DDevice9* pDevice_;
-
-	IDirect3DSurface9* pBackBuffer_;
-	IDirect3DSurface9* pZBuffer_;
-
-	VertexDeclarationManager* vertexManager_;
-
-	D3DXMATRIX matView_;
-	D3DXMATRIX matProjection_;
-	D3DXMATRIX matViewport_;
-
-	BlendMode previousBlendMode_;
-
-	float fps_;
 };

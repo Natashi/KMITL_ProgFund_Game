@@ -4,6 +4,9 @@
 
 //windows
 
+#define _WIN32_WINNT _WIN32_WINNT_WIN7		//Minimum support -> Windows 7
+#define WINVER _WIN32_WINNT
+
 #include <Windows.h>
 
 #pragma comment(lib, "winmm.lib")
@@ -39,13 +42,20 @@
 #undef min
 #undef max
 
-//DirectX
-
 #pragma warning(disable : 4005)		//macro redefinition
 #pragma warning(disable : 4244)		//conversion from x to y, possible loss of data
 #pragma warning(disable : 4305)		//double->float truncation
 #pragma warning(disable : 26495)	//'x' is uninitialized
 #pragma warning(disable : 26812)	//prefer enum class over enum
+
+#pragma warning(disable : 28251)	//Inconsistent annotation
+
+//DirectX
+
+#define D3D_OVERLOADS
+
+#define DIRECTSOUND_VERSION 0x0900
+#define DIRECTINPUT_VERSION 0x0800
 
 #include <DXGI.h>
 #include <DxErr.h>
@@ -55,12 +65,12 @@
 #include <D3D9.h>
 #include <D3DX9.h>
 
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "DxErr.lib")
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dsound.lib")
+#pragma comment(lib, "d3dxof.lib")
+#pragma comment(lib, "dxerr.lib")
 
 #ifdef _DEBUG
 #pragma comment(lib, "d3dx9d.lib")
@@ -70,9 +80,13 @@
 
 //Others
 
-#pragma comment(lib, "libogg/ogg.lib")
-#pragma comment(lib, "libvorbis/vorbis.lib")
-#pragma comment(lib, "libvorbis/vorbisfile.lib")
+#include <ogg/ogg.h>
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
+
+#pragma comment(lib, "ogg_static.lib")
+#pragma comment(lib, "vorbis_static.lib")
+#pragma comment(lib, "vorbisfile_static.lib")
 
 #pragma comment(lib, "freetype.lib")
 
@@ -97,3 +111,8 @@ namespace stdfs = std::filesystem;
 
 #define CD3DXVECTOR2 const D3DXVECTOR2&
 #define CD3DXVECTOR3 const D3DXVECTOR3&
+
+#define GET_INSTANCE(_type, _name) _type* _name = _type::GetBase();
+
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480

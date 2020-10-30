@@ -22,6 +22,9 @@ enum class VirtualKey : byte {
 
 class InputManager {
 	static InputManager* base_;
+private:
+	std::multimap<uint16_t, VirtualKey> mapVirtualKey_;
+	std::map<VirtualKey, KeyState> mapState_;
 public:
 	InputManager();
 	~InputManager();
@@ -34,7 +37,4 @@ public:
 	void Update();
 
 	KeyState GetKeyState(VirtualKey key);
-private:
-	std::multimap<uint16_t, VirtualKey> mapVirtualKey_;
-	std::map<VirtualKey, KeyState> mapState_;
 };

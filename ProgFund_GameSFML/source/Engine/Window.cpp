@@ -9,6 +9,8 @@ WindowMain::WindowMain() {
 	hInst_ = nullptr;
 	hWnd_ = nullptr;
 
+	hTimerQueue_ = nullptr;
+
 	pDirect3D_ = nullptr;
 	pDevice_ = nullptr;
 
@@ -34,37 +36,49 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 
 	hInst_ = hInst;
 
+	hTimerQueue_ = ::CreateTimerQueue();
+	if (hTimerQueue_ == nullptr)
+		throw EngineError("Failed to create the timer queue object.");
+
 	{
 		WNDCLASSEX wcex;
 		ZeroMemory(&wcex, sizeof(WNDCLASSEX));
 		wcex.cbSize = sizeof(WNDCLASSEX);
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = StaticWndProc;
+		wcex.lpfnWndProc = WindowMain::StaticWndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = 0;
 		wcex.hInstance = hInst;
 		//wcex.hIcon = LoadIcon(hInst, (LPCTSTR)IDI_TUTORIAL1);
-		wcex.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
-		wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+		wcex.hIcon = ::LoadIconW(nullptr, IDI_APPLICATION);
+		wcex.hCursor = ::LoadCursorW(nullptr, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)COLOR_WINDOWTEXT;
 		wcex.lpszMenuName = nullptr;
 		wcex.lpszClassName = L"DxWindowClass";
-		if (!RegisterClassExW(&wcex))
+		if (!::RegisterClassExW(&wcex))
 			throw EngineError("Failed to initialize the window class.");
 	}
 	
 	{
-		RECT rc = { 0, 0, 640, 480 };
-		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW - WS_SIZEBOX, false);
+		RECT rc = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+		::AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW - WS_SIZEBOX, false);
 
-		hWnd_ = CreateWindowW(L"DxWindowClass", L"Re: Mystic Square",
+		LONG rcWidth = rc.right - rc.left;
+		LONG rcHeight = rc.bottom - rc.top;
+
+		RECT rcMonitor;
+		::GetWindowRect(::GetDesktopWindow(), &rcMonitor);
+		LONG rcLeft = rcMonitor.right / 2L - rcWidth / 2L;
+		LONG rcTop = rcMonitor.bottom / 2L - rcHeight / 2L;
+		
+		hWnd_ = CreateWindowW(L"DxWindowClass", L"Demon World's Ohr Ein Sof",
 			WS_OVERLAPPEDWINDOW - WS_SIZEBOX,
-			100, 100, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInst_, nullptr);
+			rcLeft, rcTop, rcWidth, rcHeight, nullptr, nullptr, hInst_, nullptr);
 		if (!hWnd_)
 			throw EngineError("Failed to open a window.");
 
-		ShowWindow(hWnd_, SW_SHOW);
-		UpdateWindow(hWnd_);
+		::ShowWindow(hWnd_, SW_SHOW);
+		::UpdateWindow(hWnd_);
 
 		//ShowCursor(FALSE);
 	}
@@ -78,8 +92,8 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 	{
 		D3DPRESENT_PARAMETERS d3dpp;
 		ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
-		d3dpp.BackBufferWidth = 640;
-		d3dpp.BackBufferHeight = 480;
+		d3dpp.BackBufferWidth = SCREEN_WIDTH;
+		d3dpp.BackBufferHeight = SCREEN_HEIGHT;
 		d3dpp.Windowed = TRUE;
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
@@ -114,7 +128,7 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 	pDevice_->GetDepthStencilSurface(&pZBuffer_);
 
 	SetBlendMode(BlendMode::Alpha);
-	SetViewPort(0, 0, 640, 480, 0.0f, 1.0f);
+	SetViewPort(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 1.0f);
 
 	pDevice_->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
@@ -134,6 +148,8 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 	vertexManager_->Initialize();
 }
 void WindowMain::Release() {
+	::DeleteTimerQueue(hTimerQueue_);
+
 	ptr_release(pBackBuffer_);
 	ptr_release(pZBuffer_);
 	ptr_release(pDevice_);
@@ -237,8 +253,8 @@ LRESULT WindowMain::StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		EndPaint(hWnd, &ps);
+		HDC hdc = ::BeginPaint(hWnd, &ps);
+		::EndPaint(hWnd, &ps);
 		break;
 	}
 	case WM_CLOSE:
@@ -253,8 +269,8 @@ LRESULT WindowMain::StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
 		int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
 
-		RECT wr = { 0, 0, 640, 480 };
-		AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW - WS_SIZEBOX, FALSE);
+		RECT wr = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+		::AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW - WS_SIZEBOX, FALSE);
 
 		int width = wr.right - wr.left;
 		int height = wr.bottom - wr.top;

@@ -9,6 +9,9 @@
 #include "../Engine/Input.hpp"
 #include "../Engine/Scene.hpp"
 #include "../Engine/ResourceManager.hpp"
+#include "../Engine/Sound.hpp"
+
+#include "../Engine/Table.hpp"
 
 #include "../Engine/Vertex.hpp"
 #include "../Engine/Object.hpp"

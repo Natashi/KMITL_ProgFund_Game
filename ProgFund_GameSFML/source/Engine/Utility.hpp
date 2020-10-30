@@ -3,6 +3,7 @@
 #include "../../pch.h"
 
 #include "VectorExtensions.hpp"
+#include "Table.hpp"
 
 //*******************************************************************
 //GUID utilities
@@ -116,11 +117,11 @@ public:
 	class Lerp {
 	public:
 		typedef enum : uint8_t {
-			LINEAR,
-			SMOOTH,
-			SMOOTHER,
-			ACCELERATE,
-			DECELERATE,
+			MODE_LINEAR,
+			MODE_SMOOTH,
+			MODE_SMOOTHER,
+			MODE_ACCELERATE,
+			MODE_DECELERATE,
 		} Type;
 	public:
 		template<typename T, typename L>
@@ -149,21 +150,64 @@ public:
 //*******************************************************************
 //Rect utilities
 //*******************************************************************
+template<typename T>
+class DxRect {
+public:
+	DxRect() {
+		left = (T)0;
+		top = (T)0;
+		right = (T)0;
+		bottom = (T)0;
+	}
+	DxRect(T l, T t, T r, T b) : left(l), top(t), right(r), bottom(b) {}
+	DxRect(const DxRect<T>& src) {
+		left = src.left;
+		top = src.top;
+		right = src.right;
+		bottom = src.bottom;
+	}
+	DxRect(const RECT& src) {
+		left = (T)src.left;
+		top = (T)src.top;
+		right = (T)src.right;
+		bottom = (T)src.bottom;
+	}
+	template<typename L>
+	DxRect(const DxRect<L>& src) {
+		left = (T)src.left;
+		top = (T)src.top;
+		right = (T)src.right;
+		bottom = (T)src.bottom;
+	}
 
-struct DxRect {
-	float left;
-	float top;
-	float right;
-	float bottom;
+	template<typename L>
+	inline DxRect<L> NewAs() {
+		DxRect<L> res = DxRect<L>((L)left, (L)top,
+			(L)right, (L)bottom);
+		return res;
+	}
+	inline void Set(T l, T t, T r, T b) {
+		left = l;
+		top = t;
+		right = r;
+		bottom = b;
+	}
 
-	DxRect() : left(0), top(0), right(0), bottom(0) {}
-	DxRect(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) {}
+	T GetWidth() const { return right - left; }
+	T GetHeight() const { return bottom - top; }
 
-	static DxRect SetFromIndex(int wd, int ht, int id, int ict, int ox = 0, int oy = 0) {
+	static DxRect<T> SetFromIndex(int wd, int ht, int id, int ict, int ox = 0, int oy = 0) {
 		int iw = (id % ict) * wd + ox;
 		int ih = (id / ict) * ht + oy;
-		return DxRect(iw, ih, iw + wd, ih + ht);
+		return DxRect<T>(iw, ih, iw + wd, ih + ht);
 	}
+
+	bool IsIntersected(const DxRect<T>& other) const {
+		return !(other.left > right || other.right < left
+			|| other.top > bottom || other.bottom < top);
+	}
+public:
+	T left, top, right, bottom;
 };
 
 //*******************************************************************
