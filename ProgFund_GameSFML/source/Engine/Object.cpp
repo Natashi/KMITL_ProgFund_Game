@@ -186,7 +186,59 @@ void StaticRenderObject::Initialize() {
 }
 void StaticRenderObject::Update() {
 }
-HRESULT StaticRenderObject::Render() {
+
+void StaticRenderObject::UpdateVertexBuffer() {
+	size_t sizeBuffer = bufferVertex_->GetSize();
+	if (vertex_.size() > sizeBuffer) {
+		while (vertex_.size() > sizeBuffer)
+			sizeBuffer = sizeBuffer << 1;
+		bufferVertex_->Create(sizeBuffer, sizeof(VertexTLX), D3DPOOL_MANAGED, VertexTLX::VertexFormat);
+	}
+	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+	lockParam.SetSource(vertex_, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
+	bufferVertex_->UpdateBuffer(&lockParam);
+}
+void StaticRenderObject::UpdateIndexBuffer() {
+	size_t sizeBuffer = bufferIndex_->GetSize();
+	if (index_.size() > sizeBuffer) {
+		while (index_.size() > sizeBuffer)
+			sizeBuffer = sizeBuffer << 1;
+		bufferIndex_->Create(sizeBuffer, sizeof(uint16_t), D3DPOOL_MANAGED, D3DFMT_INDEX16);
+	}
+	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+	lockParam.SetSource(index_, DX_MAX_BUFFER_SIZE, sizeof(uint16_t));
+	bufferIndex_->UpdateBuffer(&lockParam);
+}
+
+//*******************************************************************
+//DynamicRenderObject
+//*******************************************************************
+DynamicRenderObject::DynamicRenderObject() {
+	Initialize();
+}
+DynamicRenderObject::~DynamicRenderObject() {
+}
+
+void DynamicRenderObject::Initialize() {
+	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, D3DUSAGE_DYNAMIC));
+	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, D3DUSAGE_DYNAMIC));
+	bufferVertex_->Create(512U, sizeof(VertexTLX), D3DPOOL_DEFAULT, VertexTLX::VertexFormat);
+}
+void DynamicRenderObject::Update() {
+}
+
+//*******************************************************************
+//StaticRenderObject2D
+//*******************************************************************
+StaticRenderObject2D::StaticRenderObject2D() {
+	bPermitCamera_ = true;
+}
+StaticRenderObject2D::~StaticRenderObject2D() {
+
+}
+
+HRESULT StaticRenderObject2D::Render() {
 	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
 
 	WindowMain* window = WindowMain::GetBase();
@@ -243,39 +295,6 @@ HRESULT StaticRenderObject::Render() {
 	device->SetVertexDeclaration(nullptr);
 
 	return S_OK;
-}
-
-void StaticRenderObject::UpdateVertexBuffer() {
-	size_t sizeBuffer = bufferVertex_->GetSize();
-	if (vertex_.size() > sizeBuffer) {
-		while (vertex_.size() > sizeBuffer)
-			sizeBuffer = sizeBuffer << 1;
-		bufferVertex_->Create(sizeBuffer, sizeof(VertexTLX), D3DPOOL_MANAGED, VertexTLX::VertexFormat);
-	}
-	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
-	lockParam.SetSource(vertex_, 0x8000u, sizeof(VertexTLX));
-	bufferVertex_->UpdateBuffer(&lockParam);
-}
-void StaticRenderObject::UpdateIndexBuffer() {
-	size_t sizeBuffer = bufferIndex_->GetSize();
-	if (index_.size() > sizeBuffer) {
-		while (index_.size() > sizeBuffer)
-			sizeBuffer = sizeBuffer << 1;
-		bufferIndex_->Create(sizeBuffer, sizeof(uint16_t), D3DPOOL_MANAGED, D3DFMT_INDEX16);
-	}
-	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
-	lockParam.SetSource(index_, 0x8000u, sizeof(uint16_t));
-	bufferIndex_->UpdateBuffer(&lockParam);
-}
-void StaticRenderObject::SetArrayVertex(const std::vector<VertexTLX>& vertices) {
-	vertex_ = std::vector<VertexTLX>(vertices.begin(),
-		std::min(vertices.begin() + 0x8000u, vertices.end()));
-	UpdateVertexBuffer();
-}
-void StaticRenderObject::SetArrayIndex(const std::vector<uint16_t>& indices) {
-	index_ = std::vector<uint16_t>(indices.begin(),
-		std::min(indices.begin() + 0x8000u, indices.end()));
-	UpdateIndexBuffer();
 }
 
 //*******************************************************************

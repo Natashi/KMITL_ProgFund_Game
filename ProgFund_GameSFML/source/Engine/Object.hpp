@@ -47,6 +47,7 @@ public:
 	void DeleteObjectValue(const std::string& key) { mapObjectValue_.erase(key); }
 };
 
+#define DX_MAX_BUFFER_SIZE 0x10000u
 class RenderObject : public ObjectBase {
 protected:
 	D3DXVECTOR3 position_;
@@ -137,8 +138,14 @@ public:
 	void SetBlendType(BlendMode type) { blend_ = type; }
 	BlendMode GetBlendType() { return blend_; }
 
-	virtual void SetArrayVertex(const std::vector<VertexTLX>& vertices) { vertex_ = vertices; }
-	virtual void SetArrayIndex(const std::vector<uint16_t>& indices) { index_ = indices; }
+	virtual void SetArrayVertex(const std::vector<VertexTLX>& vertices) {
+		vertex_ = vertices.size() <= DX_MAX_BUFFER_SIZE ? (vertices) :
+			(std::vector<VertexTLX>(vertices.begin(), vertices.begin() + DX_MAX_BUFFER_SIZE));
+	}
+	virtual void SetArrayIndex(const std::vector<uint16_t>& indices) {
+		index_ = indices.size() <= DX_MAX_BUFFER_SIZE ? (indices) :
+			(std::vector<uint16_t>(indices.begin(), indices.begin() + DX_MAX_BUFFER_SIZE));
+	}
 };
 
 class StaticRenderObject : public RenderObject {
@@ -152,12 +159,18 @@ public:
 
 	virtual void Initialize();
 	virtual void Update();
-	virtual HRESULT Render();
+	virtual HRESULT Render() = 0;
 
 	void UpdateVertexBuffer();
 	void UpdateIndexBuffer();
-	virtual void SetArrayVertex(const std::vector<VertexTLX>& vertices);
-	virtual void SetArrayIndex(const std::vector<uint16_t>& indices);
+	virtual void SetArrayVertex(const std::vector<VertexTLX>& vertices) {
+		RenderObject::SetArrayVertex(vertices);
+		UpdateVertexBuffer();
+	}
+	virtual void SetArrayIndex(const std::vector<uint16_t>& indices) {
+		RenderObject::SetArrayIndex(indices);
+		UpdateIndexBuffer();
+	}
 
 	shared_ptr<DxVertexBuffer> GetVertexBuffer() { return bufferVertex_; }
 	shared_ptr<DxIndexBuffer> GetIndexBuffer() { return bufferIndex_; }
@@ -167,11 +180,36 @@ public:
 	void SetScrollX(float x) { scroll_.x = x; }
 	void SetScrollY(float y) { scroll_.y = y; }
 };
-//class DynamicRenderObject
+class DynamicRenderObject : public RenderObject {
+protected:
+	shared_ptr<DxVertexBuffer> bufferVertex_;
+	shared_ptr<DxIndexBuffer> bufferIndex_;
+public:
+	DynamicRenderObject();
+	virtual ~DynamicRenderObject();
 
-class Sprite2D : public StaticRenderObject {
-private:
+	virtual void Initialize();
+	virtual void Update();
+	virtual HRESULT Render() = 0;
+
+	shared_ptr<DxVertexBuffer> GetVertexBuffer() { return bufferVertex_; }
+	shared_ptr<DxIndexBuffer> GetIndexBuffer() { return bufferIndex_; }
+};
+
+class StaticRenderObject2D : public StaticRenderObject {
+protected:
 	bool bPermitCamera_;
+public:
+	StaticRenderObject2D();
+	virtual ~StaticRenderObject2D();
+
+	virtual HRESULT Render();
+
+	bool IsPermitCamera() { return bPermitCamera_; }
+	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
+};
+
+class Sprite2D : public StaticRenderObject2D {
 public:
 	Sprite2D();
 	~Sprite2D();
@@ -182,7 +220,4 @@ public:
 	void SetSourceRect(const DxRect<int>& rc);
 	void SetDestRect(const DxRect<float>& rc);
 	void SetDestCenter();
-
-	bool IsPermitCamera() { return bPermitCamera_; }
-	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
 };
