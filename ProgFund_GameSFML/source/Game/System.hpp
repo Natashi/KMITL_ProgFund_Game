@@ -129,6 +129,9 @@ public:
 };
 
 class UtilTask_FadeBGM : public TaskBase {
+private:
+	shared_ptr<SoundResource> music_;
+	double baseVol_;
 public:
 	UtilTask_FadeBGM(Scene* parent, shared_ptr<SoundResource> music, size_t frameFade, double baseVol) : TaskBase(parent) {
 		music_ = music;
@@ -143,8 +146,43 @@ public:
 	virtual void Update() {
 		double vol = Math::Lerp::Linear(baseVol_, 0.0, frame_ / (double)(frameEnd_ - 1));
 		music_->GetData()->SetVolumeRate(vol);
+		++frame_;
 	}
+};
+class UtilTask_ColorFade : public TaskBase {
 private:
-	shared_ptr<SoundResource> music_;
-	double baseVol_;
+	Sprite2D objFade_;
+	size_t framePos_[3];
+public:
+	UtilTask_ColorFade(Scene* parent,  
+		size_t frameIn, size_t frameStay, size_t frameOut, D3DCOLOR color) : TaskBase(parent) 
+	{
+		framePos_[0] = frameIn;
+		framePos_[1] = frameStay;
+		framePos_[2] = frameOut;
+		frameEnd_ = frameIn + frameStay + frameOut + 1;
+		{
+			objFade_.SetSourceRect(DxRect(0, 0, 640, 480));
+			objFade_.SetDestRect(DxRect(0, 0, 640, 480));
+			objFade_.SetColor(color);
+			objFade_.UpdateVertexBuffer();
+		}
+	}
+
+	virtual void Render() {
+		objFade_.Render();
+	}
+	virtual void Update() {
+		if (frame_ < framePos_[0]) {
+			objFade_.SetAlpha(Math::Lerp::Smooth(0, 255, frame_ / (float)framePos_[0]));
+		}
+		else if (frame_ >= framePos_[0] + framePos_[1]) {
+			size_t framePeriod = frame_ - (framePos_[0] + framePos_[1]);
+			objFade_.SetAlpha(Math::Lerp::Smooth(255, 0, framePeriod / (float)framePos_[2]));
+		}
+		else
+			objFade_.SetAlpha(255);
+
+		++frame_;
+	}
 };

@@ -8,6 +8,7 @@
 SceneManager* SceneManager::base_ = nullptr;
 SceneManager::SceneManager() {
 	primaryScene_ = nullptr;
+	rearScene_ = nullptr;
 }
 SceneManager::~SceneManager() {
 }
@@ -16,6 +17,7 @@ void SceneManager::Initialize() {
 	base_ = this;
 
 	primaryScene_ = std::make_shared<Scene>(this);
+	rearScene_ = std::make_shared<Scene>(this);
 	listScene_.resize(MAX_SCENE_SPACE);
 }
 void SceneManager::Release() {
@@ -23,10 +25,13 @@ void SceneManager::Release() {
 }
 void SceneManager::Render() {
 	primaryScene_->Render();
+
 	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene)
 			iScene->Render();
 	}
+
+	rearScene_->Render();
 }
 void SceneManager::Update() {
 	primaryScene_->Update();
@@ -39,6 +44,8 @@ void SceneManager::Update() {
 				iScene = nullptr;
 		}
 	}
+
+	rearScene_->Update();
 }
 void SceneManager::AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool bReplace) {
 	if (indexScene >= MAX_SCENE_SPACE)
@@ -50,9 +57,9 @@ void SceneManager::AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool 
 void SceneManager::RemoveScene(size_t indexScene) {
 	listScene_[indexScene] = nullptr;
 }
-void SceneManager::RemoveScene(shared_ptr<Scene> ptrScene) {
+void SceneManager::RemoveScene(Scene* ptrScene) {
 	for (shared_ptr<Scene>& iScene : listScene_) {
-		if (iScene == ptrScene) {
+		if (iScene.get() == ptrScene) {
 			iScene = nullptr;
 			return;
 		}

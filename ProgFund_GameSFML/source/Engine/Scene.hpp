@@ -8,8 +8,8 @@ public:
 	TaskBase(Scene* parent);
 	virtual ~TaskBase();
 
-	virtual void Render() = 0;
-	virtual void Update() = 0;
+	virtual void Render() {};
+	virtual void Update() {};
 
 	Scene* GetParent() { return parent_; }
 
@@ -31,9 +31,9 @@ class Scene {
 public:
 	typedef enum : uint8_t {
 		Menu,
-		StageUI,
-		Stage,
 		Background,
+		Stage,
+		StageUI,
 		Pause,
 		Unknown,
 	} Type;
@@ -93,13 +93,16 @@ public:
 	void Update();
 
 	shared_ptr<Scene> GetPrimaryScene() { return primaryScene_; }
+	shared_ptr<Scene> GetRearScene() { return rearScene_; }
 
 	void AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool bReplace = false);
 	void RemoveScene(size_t indexScene);
-	void RemoveScene(shared_ptr<Scene> ptrScene);
+	void RemoveScene(shared_ptr<Scene> ptrScene) { RemoveScene(ptrScene.get()); }
+	void RemoveScene(Scene* ptrScene);
 
 	bool IsAnyActive();
 private:
 	shared_ptr<Scene> primaryScene_;
+	shared_ptr<Scene> rearScene_;
 	std::vector<shared_ptr<Scene>> listScene_;
 };

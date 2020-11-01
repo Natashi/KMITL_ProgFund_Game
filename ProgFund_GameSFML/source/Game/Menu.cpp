@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Menu.hpp"
+#include "StageMain.hpp"
 
 //*******************************************************************
 //Menu_Scene
@@ -199,7 +200,7 @@ void Menu_Child_ParentMenu::Render() {
 }
 void Menu_Child_ParentMenu::Update() {
 	GET_INSTANCE(InputManager, inputManager);
-	if (flgGetInput_) {
+	if (flgGetInput_ && frame_ > 20) {
 		if (inputManager->GetKeyState(VirtualKey::Down) == KeyState::Push) {
 			++selectIndex_;
 			if (selectIndex_ >= MenuParams::MAIN_ITEMS)
@@ -323,7 +324,7 @@ void Menu_Child_RankMenu::Render() {
 }
 void Menu_Child_RankMenu::Update() {
 	GET_INSTANCE(InputManager, inputManager);
-	if (flgGetInput_) {
+	if (flgGetInput_ && frame_ > 20 && frameEnd_ == UINT_MAX) {
 		if (inputManager->GetKeyState(VirtualKey::Down) == KeyState::Push) {
 			selectIndex_ += 2;
 		}
@@ -340,7 +341,19 @@ void Menu_Child_RankMenu::Update() {
 			GET_INSTANCE(CommonDataManager, dataManager);
 			dataManager->SetValue("GameRank", selectIndex_);
 
-			frameEnd_ = 0;
+			frameEnd_ = frame_ + 40;
+
+			{
+				auto rearScene = parent_->GetParentManager()->GetRearScene().get();
+				auto taskFade = std::shared_ptr<UtilTask_ColorFade>(
+					new UtilTask_ColorFade(rearScene, 30, 30, 70, D3DCOLOR_XRGB(0, 0, 0)));
+				rearScene->AddTask(taskFade);
+			}
+			{
+				auto primaryScene = parent_->GetParentManager()->GetPrimaryScene().get();
+				auto taskStageLoad = std::shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene));
+				primaryScene->AddTask(taskStageLoad);
+			}
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Cancel) == KeyState::Push) {
 			GET_INSTANCE(CommonDataManager, dataManager);
@@ -365,8 +378,6 @@ void Menu_Child_RankMenu::Update() {
 		ptr->Update();
 	++frame_;
 }
-
-
 
 //*******************************************************************
 //Menu_MainTask
@@ -406,7 +417,7 @@ Menu_MainScene::Menu_MainScene(SceneManager* manager) : Scene(manager) {
 Menu_MainScene::~Menu_MainScene() {
 	auto primaryScene = manager_->GetPrimaryScene();
 	primaryScene->AddTask(std::shared_ptr<UtilTask_FadeBGM>(
-		new UtilTask_FadeBGM(primaryScene.get(), musicBackground_, 30, 
+		new UtilTask_FadeBGM(primaryScene.get(), musicBackground_, 60, 
 			musicBackground_->GetData()->GetVolumeRate())));
 }
 void Menu_MainScene::Render() {

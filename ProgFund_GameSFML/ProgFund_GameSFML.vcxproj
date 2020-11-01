@@ -198,6 +198,8 @@
     <ClCompile Include="source\Engine\Vertex.cpp" />
     <ClCompile Include="source\Engine\Window.cpp" />
     <ClCompile Include="source\Game\Menu.cpp" />
+    <ClCompile Include="source\Game\Player.cpp" />
+    <ClCompile Include="source\Game\StageMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -213,6 +215,7 @@
     <ClInclude Include="source\Engine\Utility.hpp" />
     <ClInclude Include="source\Game\GConstant.hpp" />
     <ClInclude Include="source\Game\Menu.hpp" />
+    <ClInclude Include="source\Game\Player.hpp" />
     <ClInclude Include="source\Game\StageMain.hpp" />
     <ClInclude Include="source\Game\System.hpp" />
   </ItemGroup>

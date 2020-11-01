@@ -54,6 +54,12 @@
     <ClCompile Include="source\Engine\Table.cpp">
       <Filter>Header Files\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="source\Game\StageMain.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Game\Player.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -99,6 +105,9 @@
       <Filter>Header Files\Game</Filter>
     </ClInclude>
     <ClInclude Include="source\Game\StageMain.hpp">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Game\Player.hpp">
       <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>
