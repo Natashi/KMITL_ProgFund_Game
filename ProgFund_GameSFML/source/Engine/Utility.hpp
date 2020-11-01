@@ -153,12 +153,8 @@ public:
 template<typename T>
 class DxRect {
 public:
-	DxRect() {
-		left = (T)0;
-		top = (T)0;
-		right = (T)0;
-		bottom = (T)0;
-	}
+	DxRect() : DxRect(0, 0, 0, 0) {}
+	DxRect(T v) : DxRect(v, v, v, v) {}
 	DxRect(T l, T t, T r, T b) : left(l), top(t), right(r), bottom(b) {}
 	DxRect(const DxRect<T>& src) {
 		left = src.left;
@@ -205,6 +201,37 @@ public:
 	bool IsIntersected(const DxRect<T>& other) const {
 		return !(other.left > right || other.right < left
 			|| other.top > bottom || other.bottom < top);
+	}
+
+	DxRect<T>& operator+=(const DxRect<T>& other) {
+		left += other.left;
+		top += other.top;
+		right += other.right;
+		bottom += other.bottom;
+		return *this;
+	}
+	DxRect<T>& operator-=(const DxRect<T>& other) {
+		left -= other.left;
+		top -= other.top;
+		right -= other.right;
+		bottom -= other.bottom;
+		return *this;
+	}
+	friend DxRect<T> operator+(DxRect<T> lc, const DxRect<T>& rc) {
+		lc += rc;
+		return lc;
+	}
+	friend DxRect<T> operator+(DxRect<T> lc, const T& rc) {
+		lc += DxRect<T>(rc);
+		return lc;
+	}
+	friend DxRect<T> operator-(DxRect<T> lc, const DxRect<T>& rc) {
+		lc -= rc;
+		return lc;
+	}
+	friend DxRect<T> operator-(DxRect<T> lc, const T& rc) {
+		lc -= DxRect<T>(rc);
+		return lc;
 	}
 public:
 	T left, top, right, bottom;
