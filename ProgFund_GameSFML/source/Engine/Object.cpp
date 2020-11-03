@@ -42,6 +42,7 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 {
 	D3DXMATRIX mat;
 	D3DXMatrixIdentity(&mat);
+
 	if (scale->x != 1.0f || scale->y != 1.0f || scale->z != 1.0f) {
 		D3DXMatrixScaling(&mat, scale->x, scale->y, scale->z);
 	}
@@ -56,6 +57,7 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 		mat._43 = position->z;
 	}
 	if (camera) D3DXMatrixMultiply(&mat, &mat, camera);
+
 	return mat;
 }
 D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVECTOR2* const angleX,
@@ -63,6 +65,7 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 {
 	D3DXMATRIX mat;
 	D3DXMatrixIdentity(&mat);
+
 	if (scale->x != 1.0f || scale->y != 1.0f || scale->z != 1.0f) {
 		D3DXMatrixScaling(&mat, scale->x, scale->y, scale->z);
 	}
@@ -70,6 +73,7 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 		|| angleY->x != 1.0f || angleY->y != 0.0f)
 	{
 		D3DXMATRIX matRot;
+		D3DXMatrixIdentity(&matRot);
 
 		float cx = angleX->x;
 		float sx = angleX->y;
@@ -80,25 +84,6 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 		float sx_sy = sx * sy;
 		float sx_cy = sx * cy;
 
-#ifdef __L_MATH_VECTORIZE
-		__m128 v1 = Vectorize::Mul(Vectorize::Set(cy, sx_sy, cx, sy), Vectorize::Set(cz, sz, sz, cz));
-		__m128 v2 = Vectorize::Mul(Vectorize::Set(sx_cy, cy, sx_sy, cx), Vectorize::Set(sz, sz, cz, cz));
-		__m128 v3 = Vectorize::Mul(Vectorize::Set(sy, sx_cy, cx, cx), Vectorize::Set(sz, cz, sy, cy));
-
-		matRot._12 = -v1.m128_f32[2];
-		matRot._22 = v2.m128_f32[3];
-		matRot._31 = -v3.m128_f32[2];
-		matRot._32 = sx;
-		matRot._33 = v3.m128_f32[3];
-
-		v1 = Vectorize::AddSub(
-			Vectorize::Set(v1.m128_f32[0], v1.m128_f32[3], v3.m128_f32[0], v2.m128_f32[1]),
-			Vectorize::Set(v1.m128_f32[1], v2.m128_f32[0], v3.m128_f32[1], v2.m128_f32[2]));
-		matRot._11 = v1.m128_f32[0];
-		matRot._13 = v1.m128_f32[1];
-		matRot._21 = v1.m128_f32[3];
-		matRot._23 = v1.m128_f32[2];
-#else
 		matRot._11 = cy * cz - sx_sy * sz;
 		matRot._12 = -cx * sz;
 		matRot._13 = sy * cz + sx_cy * sz;
@@ -108,7 +93,6 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 		matRot._31 = -cx * sy;
 		matRot._32 = sx;
 		matRot._33 = cx * cy;
-#endif
 
 		D3DXMatrixMultiply(&mat, &mat, &matRot);
 	}
@@ -118,6 +102,7 @@ D3DXMATRIX RenderObject::CreateWorldMatrix2D(D3DXVECTOR3* const position, D3DXVE
 		mat._43 = position->z;
 	}
 	if (camera) D3DXMatrixMultiply(&mat, &mat, camera);
+
 	return mat;
 }
 size_t RenderObject::GetPrimitiveCount(D3DPRIMITIVETYPE type, size_t count) {
