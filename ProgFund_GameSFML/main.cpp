@@ -38,7 +38,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		soundManager->Initialize(winMain->GetHandle());
 
 		InputManager* inputManager = new InputManager();
-		inputManager->Initialize();
+		inputManager->Initialize(hInstance, hWnd);
 
 		SceneManager* sceneManager = new SceneManager();
 		sceneManager->Initialize();
@@ -54,7 +54,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		{
 			//Refresh rate -> 60fps
-			double t_target_ms = 1000.0 / 60;
+			double t_target_ms = 1000.0 / 60 * 2;
 
 			DWORD current_time = DxGetTime();
 			DWORD previous_time = current_time;
@@ -63,6 +63,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			DWORD accum_update = 0;
 
 			std::list<DWORD> listDelta;
+			std::list<double> listFPS;
 
 			MSG msg = { 0 };
 			while (msg.message != WM_QUIT) {
@@ -109,6 +110,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 						listDelta.clear();
 
 						double fps = (t_target_ms * 1000) / (double)sumMs;
+						listFPS.push_back(fps);
+						if (listFPS.size() > 64)
+							listFPS.pop_front();
 						winMain->SetFPS(fps);
 
 						//fpsCounter.setString(StringFormat("%.2f fps", fps));
