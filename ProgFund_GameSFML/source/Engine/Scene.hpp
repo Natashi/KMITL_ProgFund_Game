@@ -24,6 +24,7 @@ protected:
 	size_t frameEnd_;
 	bool bFinish_;
 };
+#define CONSTRUCT_TASK(_class) _class::_class(Scene* parent) : TaskBase(parent) 
 
 class SceneManager;
 class Scene {
