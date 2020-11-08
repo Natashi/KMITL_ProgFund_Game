@@ -47,7 +47,6 @@ public:
 	void DeleteObjectValue(const std::string& key) { mapObjectValue_.erase(key); }
 };
 
-#define DX_MAX_BUFFER_SIZE 0x10000u
 class RenderObject : public ObjectBase {
 protected:
 	D3DXVECTOR3 position_;
@@ -124,11 +123,11 @@ public:
 	virtual void SetVertex(size_t index, const VertexTLX& vertex);
 	virtual VertexTLX* GetVertex(size_t index);
 
-	void SetTexture(shared_ptr<TextureResource> texture) { 
+	virtual void SetTexture(shared_ptr<TextureResource> texture) { 
 		texture_ = texture ? texture : ResourceManager::GetBase()->GetEmptyTexture();
 	}
 	shared_ptr<TextureResource> GetTexture() { return texture_; }
-	void SetShader(shared_ptr<ShaderResource> shader) { 
+	virtual void SetShader(shared_ptr<ShaderResource> shader) {
 		shader_ = shader ? shader : ResourceManager::GetBase()->GetDefaultShader();
 	}
 	shared_ptr<ShaderResource> GetShader() { return shader_; }
@@ -180,6 +179,7 @@ public:
 	void SetScrollX(float x) { scroll_.x = x; }
 	void SetScrollY(float y) { scroll_.y = y; }
 };
+/*
 class DynamicRenderObject : public RenderObject {
 protected:
 	shared_ptr<DxVertexBuffer> bufferVertex_;
@@ -195,6 +195,7 @@ public:
 	shared_ptr<DxVertexBuffer> GetVertexBuffer() { return bufferVertex_; }
 	shared_ptr<DxIndexBuffer> GetIndexBuffer() { return bufferIndex_; }
 };
+*/
 
 class StaticRenderObject2D : public StaticRenderObject {
 protected:

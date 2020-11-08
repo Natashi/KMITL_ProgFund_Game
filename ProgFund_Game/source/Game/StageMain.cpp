@@ -3,6 +3,7 @@
 #include "StageMain.hpp"
 
 #include "Player.hpp"
+#include "Shot.hpp"
 
 //*******************************************************************
 //Stage_SceneLoader
@@ -90,6 +91,37 @@ void Stage_MainSceneUI::Update() {
 //*******************************************************************
 //Stage_MainScene
 //*******************************************************************
+class Stage_ShotTest : public TaskBase {
+private:
+	double angleA, angleB, angleC;
+public:
+	Stage_ShotTest(Scene* parent) : TaskBase(parent) {
+		angleA = 2.7488935;
+		angleB = 0;
+		angleC = 0.0029269908;
+	};
+
+	virtual void Update() {
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+
+		if (frame_ > 120 && frame_ % 3 == 0) {
+			GET_INSTANCE(RandProvider, randGen);
+			double ang = randGen->GetReal(0, GM_PI);
+
+			for (int i = 0; i < 8; ++i) {
+				shotManager->AddEnemyShot(shotManager->CreateShotA1(
+					D3DXVECTOR2(320, 128), 2, angleA + GM_PI_X2 * (i / 8.0f), ShotConst::CyanRiceS, 20),
+					ShotPolarity::White);
+			}
+			angleB += angleC;
+			angleA += angleB;
+		}
+
+		++frame_;
+	}
+};
+
 Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	GET_INSTANCE(ResourceManager, resourceManager);
 
@@ -98,13 +130,29 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	{
 		pTaskPlayer_ = std::make_shared<Stage_PlayerTask>(this);
 		
-		DxRect<int> rcMargin = DxRect<int>(12, 36, -12, -16);
+		DxRect<int> rcMargin(12, 36, -12, -16);
 		pTaskPlayer_->SetClip(rcStgFrame_ + rcMargin);
 
 		pTaskPlayer_->SetX((rcStgFrame_.left + rcStgFrame_.right) / 2);
 		pTaskPlayer_->SetY(rcStgFrame_.bottom - 80);
 
 		this->AddTask(pTaskPlayer_);
+	}
+	{
+		pTaskShotManager_ = std::make_shared<Stage_ShotManager>(this);
+
+		DxRect<int> rcMargin(-64, -64, 64, 64);
+		pTaskShotManager_->SetClip(DxRect<int>(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT) + rcMargin);
+
+		pTaskShotManager_->LoadEnemyShotData();
+		pTaskShotManager_->LoadPlayerShotData();
+
+		this->AddTask(pTaskShotManager_);
+	}
+
+	{
+		auto pTaskTest = std::make_shared<Stage_ShotTest>(this);
+		this->AddTask(pTaskTest);
 	}
 
 	bAutoDelete_ = false;

@@ -7,18 +7,19 @@
 class VertexTLX {
 public:
 	static const D3DVERTEXELEMENT9 VertexLayout[];
+	static const D3DVERTEXELEMENT9 VertexLayoutFlipped[];
 	static const size_t LayoutSize;
 	static const DWORD VertexFormat;
 public:
 	D3DXVECTOR3 position;
+	D3DCOLOR diffuse;
 	D3DXVECTOR2 texcoord;
-	DWORD diffuse;
 
 	VertexTLX() : position(0, 0, 0), texcoord(0, 0), diffuse(0xffffffff) {}
 	VertexTLX(const D3DXVECTOR3& pos, const D3DXVECTOR2& tex) :
 		position(pos), texcoord(tex), diffuse(0xffffffff) {
 	}
-	VertexTLX(const D3DXVECTOR3& pos, const D3DXVECTOR2& tex, const DWORD& col) :
+	VertexTLX(const D3DXVECTOR3& pos, const D3DXVECTOR2& tex, const D3DCOLOR& col) :
 		position(pos), texcoord(tex), diffuse(col) {
 	}
 
@@ -26,23 +27,6 @@ public:
 		position.x += bias;
 		position.y += bias;
 	}
-};
-
-class VertexDeclarationManager {
-	static VertexDeclarationManager* base_;
-public:
-	VertexDeclarationManager();
-	virtual ~VertexDeclarationManager();
-
-	static VertexDeclarationManager* const GetBase() { return base_; }
-
-	void Initialize();
-	void Release();
-
-	IDirect3DVertexDeclaration9* GetDeclaration(size_t index) { return listDeclaration_[index]; }
-	IDirect3DVertexDeclaration9* GetDeclarationTLX() { return GetDeclaration(0); }
-private:
-	std::vector<IDirect3DVertexDeclaration9*> listDeclaration_;
 };
 
 struct BufferLockParameter {
@@ -93,7 +77,7 @@ public:
 
 	HRESULT UpdateBuffer(BufferLockParameter* pLock);
 
-	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool) = 0;
+	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool, DWORD* pParam) = 0;
 
 	T* GetBuffer() { return buffer_; }
 	size_t GetSize() { return size_; }
@@ -111,10 +95,8 @@ public:
 	DxVertexBuffer(IDirect3DDevice9* device, DWORD usage);
 	virtual ~DxVertexBuffer();
 
-	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool) {
-		return Create(size, stride, pool, 0U);
-	}
-	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool, DWORD fvf);
+	//pParam: [FVF]
+	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool, DWORD* pParam);
 private:
 	DWORD fvf_;
 };
@@ -123,10 +105,38 @@ public:
 	DxIndexBuffer(IDirect3DDevice9* device, DWORD usage);
 	virtual ~DxIndexBuffer();
 
-	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool) {
-		return Create(size, stride, pool, D3DFMT_UNKNOWN);
-	}
-	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool, D3DFORMAT format);
+	//pParam: [D3DFORMAT]
+	virtual HRESULT Create(size_t size, size_t stride, D3DPOOL pool, DWORD* pParam);
 private:
 	D3DFORMAT format_;
+};
+
+#define DX_MAX_BUFFER_SIZE 0x10000u
+class VertexBufferManager : public DxResourceManagerBase {
+	static VertexBufferManager* base_;
+public:
+	VertexBufferManager();
+	virtual ~VertexBufferManager();
+
+	static VertexBufferManager* const GetBase() { return base_; }
+
+	void Initialize();
+	void Release();
+
+	void CreateBuffers();
+
+	virtual void OnLostDevice();
+	virtual void OnRestoreDevice();
+
+	IDirect3DVertexDeclaration9* GetDeclaration(size_t index) { return listDeclaration_[index]; }
+	IDirect3DVertexDeclaration9* GetDeclarationTLX() { return GetDeclaration(0); }
+
+	DxVertexBuffer* GetDynamicVertexBuffer(size_t index) { return listBufferDynamicVertex_[index]; }
+	DxVertexBuffer* GetDynamicVertexBufferTLX() { return GetDynamicVertexBuffer(0); }
+	DxIndexBuffer* GetDynamicIndexBuffer() { return bufferDynamicIndex_; }
+private:
+	std::vector<IDirect3DVertexDeclaration9*> listDeclaration_;
+
+	std::vector<DxVertexBuffer*> listBufferDynamicVertex_;
+	DxIndexBuffer* bufferDynamicIndex_;
 };

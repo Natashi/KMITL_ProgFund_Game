@@ -2,7 +2,8 @@
 #include "../../pch.h"
 
 #include "System.hpp"
-#include "StageMain.hpp"
+
+class Stage_MainScene;
 
 class Stage_PlayerHitboxTask;
 class Stage_PlayerTask : public TaskBase {

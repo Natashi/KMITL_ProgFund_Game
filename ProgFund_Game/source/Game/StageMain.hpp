@@ -5,6 +5,10 @@
 
 #include "System.hpp"
 
+#include "ObjMove.hpp"
+#include "Player.hpp"
+#include "Shot.hpp"
+
 class Stage_SceneLoader : public TaskBase {
 public:
 	Stage_SceneLoader(Scene* parent);
@@ -30,6 +34,7 @@ class Stage_PlayerTask;
 class Stage_MainScene : public Scene {
 private:
 	shared_ptr<Stage_PlayerTask> pTaskPlayer_;
+	shared_ptr<Stage_ShotManager> pTaskShotManager_;
 
 	DxRect<int> rcStgFrame_;
 public:
@@ -39,5 +44,6 @@ public:
 	virtual void Render();
 	virtual void Update();
 
-	shared_ptr<Stage_PlayerTask> GetPlayerTask() { return pTaskPlayer_; }
+	shared_ptr<Stage_PlayerTask> GetPlayer() { return pTaskPlayer_; }
+	shared_ptr<Stage_ShotManager> GetShotManager() { return pTaskShotManager_; }
 };

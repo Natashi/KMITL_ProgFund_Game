@@ -6,6 +6,7 @@
 #include "source/Engine/Scene.hpp"
 
 #include "source/Game/Menu.hpp"
+#include "source/Game/StageMain.hpp"
 
 DWORD DxGetTime();
 
@@ -17,6 +18,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		WindowMain* winMain = new WindowMain();
 		winMain->Initialize(hInstance);
 		hWnd = winMain->GetHandle();
+
+		RandProvider* randGenerator = new RandProvider();
+		randGenerator->Initialize(DxGetTime() ^ 0xf562cc03);
 
 		CommonDataManager* valueManager = new CommonDataManager();
 		valueManager->Initialize();
@@ -36,15 +40,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		printf("Initialized application.\n");
 
 		{
+			/*
 			shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
 			menuScene->SetType(Scene::Type::Menu);
 			sceneManager->AddScene(menuScene, Scene::Type::Menu);
+			*/
+			auto primaryScene = sceneManager->GetPrimaryScene();
+			auto taskStageLoad = shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene.get()));
+			primaryScene->AddTask(taskStageLoad);
+
 			printf("Initialized game.\n");
 		}
 
 		{
 			//Refresh rate -> 60fps
-			double t_target_ms = 1000.0 / 60 * 2;
+			double t_target_ms = 1000.0 / 60;
 
 			DWORD current_time = DxGetTime();
 			DWORD previous_time = current_time;
@@ -68,6 +78,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 					accum_fps += delta_time;
 					accum_update += delta_time;
 
+					previous_time = current_time;
+
 					if (accum_update > t_target_ms) {
 						listDelta.push_back(accum_update);
 
@@ -86,10 +98,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 						winMain->EndScene();
 
 						accum_update = 0;
-						previous_time = DxGetTime();
 
-						if (!sceneManager->IsAnyActive())
-							msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
+						//if (!sceneManager->IsAnyActive())
+							//msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
 					}
 
 					//2 fps updates per second, hopefully
@@ -118,6 +129,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		printf("Finalizing application...\n");
 
+		ptr_release(randGenerator);
 		ptr_release(valueManager);
 		ptr_release(resourceManager);
 		ptr_release(soundManager);

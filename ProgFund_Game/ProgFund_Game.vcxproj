@@ -99,7 +99,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;__L_MATH_VECTORIZE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -138,7 +138,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -191,6 +191,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="source\Engine\Input.cpp" />
     <ClCompile Include="source\Engine\Object.cpp" />
+    <ClCompile Include="source\Engine\Rand.cpp" />
     <ClCompile Include="source\Engine\ResourceManager.cpp" />
     <ClCompile Include="source\Engine\Scene.cpp" />
     <ClCompile Include="source\Engine\Sound.cpp" />
@@ -198,13 +199,16 @@
     <ClCompile Include="source\Engine\Vertex.cpp" />
     <ClCompile Include="source\Engine\Window.cpp" />
     <ClCompile Include="source\Game\Menu.cpp" />
+    <ClCompile Include="source\Game\ObjMove.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\Game\Shot.cpp" />
     <ClCompile Include="source\Game\StageMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\Engine\DxConstant.hpp" />
     <ClInclude Include="source\Engine\Object.hpp" />
+    <ClInclude Include="source\Engine\Rand.hpp" />
     <ClInclude Include="source\Engine\Sound.hpp" />
     <ClInclude Include="source\Engine\Table.hpp" />
     <ClInclude Include="source\Engine\VectorExtensions.hpp" />
@@ -216,6 +220,7 @@
     <ClInclude Include="source\Engine\Utility.hpp" />
     <ClInclude Include="source\Game\GConstant.hpp" />
     <ClInclude Include="source\Game\Menu.hpp" />
+    <ClInclude Include="source\Game\ObjMove.hpp" />
     <ClInclude Include="source\Game\Player.hpp" />
     <ClInclude Include="source\Game\Shot.hpp" />
     <ClInclude Include="source\Game\StageMain.hpp" />

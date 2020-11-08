@@ -63,6 +63,13 @@ public:
 	//Fused [multiply]+[add] for double vector
 	static __forceinline __m128d MulAdd(const __m128d& a, const __m128d& b, const __m128d& c);
 
+	//Performs [max] on vector a and b
+	static __forceinline __m128 MaxPacked(const __m128& a, const __m128& b);
+	//Performs [min] on vector a and b
+	static __forceinline __m128 MinPacked(const __m128& a, const __m128& b);
+	//Performs [clamp] on vector a and b (Fused [min]+[max])
+	static __forceinline __m128 ClampPacked(const __m128& a, const __m128& min, const __m128& max);
+
 	//Performs [max] on double vector a and b
 	static __forceinline __m128d MaxPacked(const __m128d& a, const __m128d& b);
 	//Performs [min] on double vector a and b
@@ -355,6 +362,43 @@ __m128d Vectorize::MulAdd(const __m128d& a, const __m128d& b, const __m128d& c) 
 	//SSE2
 	res = _mm_mul_pd(a, b);
 	res = _mm_add_pd(res, c);
+#endif
+	return res;
+}
+
+//---------------------------------------------------------------------
+
+__m128 Vectorize::MaxPacked(const __m128& a, const __m128& b) {
+	__m128 res;
+#ifndef __L_MATH_VECTORIZE
+	for (int i = 0; i < 4; ++i)
+		res.m128_f32[i] = std::max(a.m128_f32[i], b.m128_f32[i]);
+#else
+	//SSE
+	res = _mm_min_ps(a, b);
+#endif
+	return res;
+}
+__m128 Vectorize::MinPacked(const __m128& a, const __m128& b) {
+	__m128 res;
+#ifndef __L_MATH_VECTORIZE
+	for (int i = 0; i < 4; ++i)
+		res.m128_f32[i] = std::min(a.m128_f32[i], b.m128_f32[i]);
+#else
+	//SSE
+	res = _mm_max_ps(a, b);
+#endif
+	return res;
+}
+__m128 Vectorize::ClampPacked(const __m128& a, const __m128& min, const __m128& max) {
+	__m128 res;
+#ifndef __L_MATH_VECTORIZE
+	for (int i = 0; i < 4; ++i)
+		res.m128_f32[i] = std::clamp(a.m128_f32[i], min.m128_f32[i], max.m128_f32[i]);
+#else
+	//SSE
+	res = _mm_max_ps(a, min);
+	res = _mm_min_ps(res, max);
 #endif
 	return res;
 }

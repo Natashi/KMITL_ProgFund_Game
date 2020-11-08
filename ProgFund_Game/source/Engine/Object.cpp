@@ -167,7 +167,7 @@ void StaticRenderObject::Initialize() {
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, 0));
 	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, 0));
-	bufferVertex_->Create(64U, sizeof(VertexTLX), D3DPOOL_MANAGED, VertexTLX::VertexFormat);
+	bufferVertex_->Create(64U, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
 }
 void StaticRenderObject::Update() {
 }
@@ -177,7 +177,7 @@ void StaticRenderObject::UpdateVertexBuffer() {
 	if (vertex_.size() > sizeBuffer) {
 		while (vertex_.size() > sizeBuffer)
 			sizeBuffer = sizeBuffer << 1;
-		bufferVertex_->Create(sizeBuffer, sizeof(VertexTLX), D3DPOOL_MANAGED, VertexTLX::VertexFormat);
+		bufferVertex_->Create(sizeBuffer, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
 	}
 	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
 	lockParam.SetSource(vertex_, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
@@ -188,13 +188,15 @@ void StaticRenderObject::UpdateIndexBuffer() {
 	if (index_.size() > sizeBuffer) {
 		while (index_.size() > sizeBuffer)
 			sizeBuffer = sizeBuffer << 1;
-		bufferIndex_->Create(sizeBuffer, sizeof(uint16_t), D3DPOOL_MANAGED, D3DFMT_INDEX16);
+		DWORD fmt = D3DFMT_INDEX16;
+		bufferIndex_->Create(sizeBuffer, sizeof(uint16_t), D3DPOOL_MANAGED, &fmt);
 	}
 	BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
 	lockParam.SetSource(index_, DX_MAX_BUFFER_SIZE, sizeof(uint16_t));
 	bufferIndex_->UpdateBuffer(&lockParam);
 }
 
+/*
 //*******************************************************************
 //DynamicRenderObject
 //*******************************************************************
@@ -208,10 +210,11 @@ void DynamicRenderObject::Initialize() {
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, D3DUSAGE_DYNAMIC));
 	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, D3DUSAGE_DYNAMIC));
-	bufferVertex_->Create(512U, sizeof(VertexTLX), D3DPOOL_DEFAULT, VertexTLX::VertexFormat);
+	bufferVertex_->Create(512U, sizeof(VertexTLX), D3DPOOL_DEFAULT, (DWORD*)&VertexTLX::VertexFormat);
 }
 void DynamicRenderObject::Update() {
 }
+*/
 
 //*******************************************************************
 //StaticRenderObject2D
@@ -253,7 +256,7 @@ HRESULT StaticRenderObject2D::Render() {
 	device->SetTexture(0, texture_->GetTexture());
 	device->SetFVF(VertexTLX::VertexFormat);
 
-	device->SetVertexDeclaration(VertexDeclarationManager::GetBase()->GetDeclarationTLX());
+	device->SetVertexDeclaration(VertexBufferManager::GetBase()->GetDeclarationTLX());
 	device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
 
 	{
@@ -299,7 +302,7 @@ void Sprite2D::Initialize() {
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, 0));
 	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, 0));
-	bufferVertex_->Create(4U, sizeof(VertexTLX), D3DPOOL_MANAGED, VertexTLX::VertexFormat);
+	bufferVertex_->Create(4U, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
 	vertex_.resize(4U, VertexTLX());
 }
 

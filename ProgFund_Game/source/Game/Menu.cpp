@@ -346,13 +346,13 @@ void Menu_Child_RankMenu::Update() {
 
 			{
 				auto rearScene = parent_->GetParentManager()->GetRearScene().get();
-				auto taskFade = std::shared_ptr<UtilTask_ColorFade>(
+				auto taskFade = shared_ptr<UtilTask_ColorFade>(
 					new UtilTask_ColorFade(rearScene, 30, 30, 70, D3DCOLOR_XRGB(0, 0, 0)));
 				rearScene->AddTask(taskFade);
 			}
 			{
 				auto primaryScene = parent_->GetParentManager()->GetPrimaryScene().get();
-				auto taskStageLoad = std::shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene));
+				auto taskStageLoad = shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene));
 				primaryScene->AddTask(taskStageLoad);
 			}
 		}

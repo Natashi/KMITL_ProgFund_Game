@@ -23,6 +23,7 @@ WindowMain::WindowMain() {
 	D3DXMatrixIdentity(&matProjection_);
 	D3DXMatrixIdentity(&matViewport_);
 
+	windowMode_ = WindowMode::Windowed;
 	previousBlendMode_ = (BlendMode)0xff;
 
 	fps_ = 0;
@@ -45,7 +46,7 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 		ZeroMemory(&wcex, sizeof(WNDCLASSEX));
 		wcex.cbSize = sizeof(WNDCLASSEX);
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = WindowMain::StaticWndProc;
+		wcex.lpfnWndProc = WindowMain::_StaticWndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = 0;
 		wcex.hInstance = hInst;
@@ -90,20 +91,33 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 	pDirect3D_->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &d3dcaps);
 
 	{
-		D3DPRESENT_PARAMETERS d3dpp;
-		ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
-		d3dpp.BackBufferWidth = SCREEN_WIDTH;
-		d3dpp.BackBufferHeight = SCREEN_HEIGHT;
-		d3dpp.Windowed = TRUE;
-		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-		d3dpp.hDeviceWindow = hWnd_;
-		d3dpp.BackBufferCount = 1;
-		d3dpp.EnableAutoDepthStencil = TRUE;
-		d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-		d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
-		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-		d3dpp.FullScreen_RefreshRateInHz = 0;
+		ZeroMemory(&presentParamWind_, sizeof(D3DPRESENT_PARAMETERS));
+		presentParamWind_.BackBufferWidth = SCREEN_WIDTH;
+		presentParamWind_.BackBufferHeight = SCREEN_HEIGHT;
+		presentParamWind_.Windowed = TRUE;
+		presentParamWind_.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		presentParamWind_.BackBufferFormat = D3DFMT_UNKNOWN;
+		presentParamWind_.hDeviceWindow = hWnd_;
+		presentParamWind_.BackBufferCount = 1;
+		presentParamWind_.EnableAutoDepthStencil = TRUE;
+		presentParamWind_.AutoDepthStencilFormat = D3DFMT_D16;
+		presentParamWind_.MultiSampleType = D3DMULTISAMPLE_NONE;
+		presentParamWind_.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+		presentParamWind_.FullScreen_RefreshRateInHz = 0;
+
+		ZeroMemory(&presentParamFull_, sizeof(D3DPRESENT_PARAMETERS));
+		presentParamFull_.BackBufferWidth = SCREEN_WIDTH;
+		presentParamFull_.BackBufferHeight = SCREEN_HEIGHT;
+		presentParamFull_.Windowed = FALSE;
+		presentParamFull_.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		presentParamFull_.BackBufferFormat = D3DFMT_X8R8G8B8;
+		presentParamFull_.hDeviceWindow = hWnd_;
+		presentParamFull_.BackBufferCount = 1;
+		presentParamFull_.EnableAutoDepthStencil = TRUE;
+		presentParamFull_.AutoDepthStencilFormat = D3DFMT_D16;
+		presentParamFull_.MultiSampleType = D3DMULTISAMPLE_NONE;
+		presentParamFull_.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+		presentParamFull_.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
 
 		std::vector<std::pair<D3DDEVTYPE, DWORD>> driverTypes;
 		if (d3dcaps.VertexShaderVersion >= D3DVS_VERSION(2, 0) && d3dcaps.PixelShaderVersion >= D3DPS_VERSION(2, 0)) {
@@ -116,7 +130,7 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 		HRESULT hr = S_OK;
 		for (std::pair<D3DDEVTYPE, DWORD>& iType : driverTypes) {
 			hr = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, iType.first, hWnd_,
-				iType.second | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
+				iType.second | D3DCREATE_FPU_PRESERVE, &presentParamWind_, &pDevice_);
 			if (SUCCEEDED(hr))
 				break;
 		}
@@ -127,6 +141,22 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 	pDevice_->GetRenderTarget(0, &pBackBuffer_);
 	pDevice_->GetDepthStencilSurface(&pZBuffer_);
 
+	vertexManager_ = new VertexBufferManager();
+	vertexManager_->Initialize();
+
+	_ResetDeviceState();
+}
+void WindowMain::Release() {
+	::DeleteTimerQueue(hTimerQueue_);
+
+	ptr_release(pBackBuffer_);
+	ptr_release(pZBuffer_);
+	ptr_release(pDevice_);
+	ptr_release(pDirect3D_);
+	ptr_delete(vertexManager_);
+}
+
+void WindowMain::_ResetDeviceState() {
 	SetBlendMode(BlendMode::Alpha);
 	SetViewPort(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 1.0f);
 
@@ -143,18 +173,52 @@ void WindowMain::Initialize(HINSTANCE hInst) {
 
 	SetZBufferMode(false, false);
 	SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-
-	vertexManager_ = new VertexDeclarationManager();
-	vertexManager_->Initialize();
 }
-void WindowMain::Release() {
-	::DeleteTimerQueue(hTimerQueue_);
 
+void WindowMain::AddDxResourceListener(DxResourceManagerBase* object) {
+	for (auto itr = listResourceManager_.begin(); itr != listResourceManager_.end(); ++itr)
+		if ((*itr) == object) return;
+	listResourceManager_.push_back(object);
+}
+void WindowMain::RemoveDxResourceListener(DxResourceManagerBase* object) {
+	for (auto itr = listResourceManager_.begin(); itr != listResourceManager_.end(); ++itr)
+		if ((*itr) == object) return;
+	listResourceManager_.push_back(object);
+}
+
+void WindowMain::_ReleaseDxResource() {
 	ptr_release(pBackBuffer_);
 	ptr_release(pZBuffer_);
-	ptr_release(pDevice_);
-	ptr_release(pDirect3D_);
-	ptr_delete(vertexManager_);
+
+	for (auto itr = listResourceManager_.begin(); itr != listResourceManager_.end(); ++itr)
+		(*itr)->OnLostDevice();
+}
+void WindowMain::_RestoreDxResource() {
+	pDevice_->GetRenderTarget(0, &pBackBuffer_);
+	pDevice_->GetDepthStencilSurface(&pZBuffer_);
+
+	for (auto itr = listResourceManager_.begin(); itr != listResourceManager_.end(); ++itr)
+		(*itr)->OnRestoreDevice();
+}
+bool WindowMain::_TestDeviceCooperation() {
+	HRESULT hr = pDevice_->TestCooperativeLevel();
+	if (hr == D3DERR_DEVICENOTRESET) {					//The device is now able to be restored
+		::InvalidateRect(hWnd_, nullptr, false);
+
+		_ReleaseDxResource();
+
+		hr = pDevice_->Reset(windowMode_ == WindowMode::Fullscreen ? &presentParamFull_ : &presentParamWind_);
+		if (SUCCEEDED(hr)) {
+			_RestoreDxResource();
+			return true;
+		}
+	}
+	else if (hr != D3DERR_DEVICELOST && FAILED(hr)) {	//Something went terribly wrong
+		std::string err = StringUtility::Format("_Restore: Unexpected failure.\n\t%s",
+			ErrorUtility::StringFromHResult(hr).c_str());
+		throw EngineError(err);
+	}
+	return false;
 }
 
 void WindowMain::BeginScene(D3DCOLOR clearColor) {
@@ -163,8 +227,11 @@ void WindowMain::BeginScene(D3DCOLOR clearColor) {
 }
 void WindowMain::EndScene(bool bPresent) {
 	pDevice_->EndScene();
-	if (bPresent)
+	if (bPresent) {
 		pDevice_->Present(nullptr, nullptr, nullptr, nullptr);
+		if (_TestDeviceCooperation())
+			_ResetDeviceState();
+	}
 }
 
 void WindowMain::SetBlendMode(BlendMode mode) {
@@ -248,7 +315,7 @@ void WindowMain::SetTextureFilter(D3DTEXTUREFILTERTYPE min, D3DTEXTUREFILTERTYPE
 	pDevice_->SetSamplerState(0, D3DSAMP_MIPFILTER, mip);
 }
 
-LRESULT WindowMain::StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT WindowMain::_StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case WM_PAINT:
 	{

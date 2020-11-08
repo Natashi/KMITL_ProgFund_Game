@@ -1,9 +1,11 @@
 #pragma once
 #include "../../pch.h"
 
+#include "DxConstant.hpp"
 #include "Utility.hpp"
 
 class ResourceManager;
+
 class Resource {
 	friend class ResourceManager;
 public:
@@ -24,6 +26,9 @@ public:
 
 	virtual void LoadFromFile(const std::string& path) = 0;
 	virtual void UnloadResource() = 0;
+
+	virtual void OnLostDevice() {}
+	virtual void OnRestoreDevice() {}
 
 	ResourceManager* GetManager() { return manager_; }
 
@@ -49,10 +54,19 @@ protected:
 */
 
 class TextureResource : public Resource {
+public:
+	enum class Type : byte {
+		Texture,
+		RenderTarget,
+	};
 protected:
+	Type typeTexture_;
 	D3DXIMAGE_INFO infoImage_;
+
 	IDirect3DTexture9* texture_;
 	IDirect3DSurface9* surface_;
+
+	IDirect3DSurface9* pSurfaceSave_;
 public:
 	TextureResource();
 
@@ -63,6 +77,10 @@ public:
 	virtual void CreateAsRenderTarget(const std::string& name, size_t width, size_t height);
 	virtual void UnloadResource();
 
+	virtual void OnLostDevice();
+	virtual void OnRestoreDevice();
+
+	Type GetTextureType() { return typeTexture_; }
 	D3DXIMAGE_INFO* GetImageInfo() { return &infoImage_; }
 
 	IDirect3DTexture9* GetTexture() { return texture_; }
@@ -113,6 +131,9 @@ public:
 	virtual void LoadFromFile(const std::string& path, Type type);
 	virtual void UnloadResource();
 
+	virtual void OnLostDevice();
+	virtual void OnRestoreDevice();
+
 	D3DXEFFECT_DESC* GetEffectDesc() { return &effectDesc_; }
 	ID3DXEffect* GetEffect() { return effect_; }
 	Type GetShaderType() { return typeShader_; }
@@ -127,8 +148,13 @@ protected:
 	Type typeShader_;
 };
 
-class ResourceManager {
+class ResourceManager : public DxResourceManagerBase {
 	static ResourceManager* base_;
+private:
+	std::map<std::string, shared_ptr<Resource>> mapResource_;
+
+	shared_ptr<TextureResource> textureEmpty_;
+	shared_ptr<ShaderResource> shaderDefault_;
 public:
 	ResourceManager();
 	virtual ~ResourceManager();
@@ -138,12 +164,20 @@ public:
 	void Initialize();
 	void Release();
 
+	virtual void OnLostDevice();
+	virtual void OnRestoreDevice();
+
 	void AddResource(shared_ptr<Resource> resource, const std::string& path);
 	void RemoveResource(const std::string& path);
 	template<typename T> inline shared_ptr<T> LoadResource(const std::string& path, const std::string& name) {
-		shared_ptr<T> res = std::make_shared<T>();
-		res->LoadFromFile(PathProperty::GetModuleDirectory() + path);
-		this->AddResource(res, name);
+		shared_ptr<T> res;
+		auto itrFind = mapResource_.find(name);
+		if (itrFind == mapResource_.end()) {
+			res = std::make_shared<T>();
+			res->LoadFromFile(PathProperty::GetModuleDirectory() + path);
+			this->AddResource(res, name);
+		}
+		else res = std::dynamic_pointer_cast<T>(itrFind->second);
 		return res;
 	}
 
@@ -154,9 +188,4 @@ public:
 
 	shared_ptr<TextureResource> GetEmptyTexture() { return textureEmpty_; }
 	shared_ptr<ShaderResource> GetDefaultShader() { return shaderDefault_; }
-private:
-	std::map<std::string, shared_ptr<Resource>> mapResource_;
-
-	shared_ptr<TextureResource> textureEmpty_;
-	shared_ptr<ShaderResource> shaderDefault_;
 };

@@ -4,37 +4,11 @@
 
 #include "VectorExtensions.hpp"
 #include "Table.hpp"
-
-//*******************************************************************
-//GUID utilities
-//*******************************************************************
-class DxGUID {
-public:
-	DxGUID(const GUID& id) : id_(id) {};
-
-	const GUID& Get() { return id_; }
-
-	bool operator<(const GUID& other) {
-		/*
-		uint64_t* pL = (uint64_t*)&l;
-		uint64_t* pR = (uint64_t*)&r;
-		if (pL[0] != pR[0]) return pL[0] < pR[0];
-		return pL[1] < pR[1];
-		*/
-		return memcmp(this, &other, sizeof(GUID)) < 0;
-	}
-	bool operator==(const GUID& other) {
-		return memcmp(this, &other, sizeof(GUID)) == 0;
-	}
-	operator GUID() { return this->Get(); }
-private:
-	GUID id_;
-};
+#include "Rand.hpp"
 
 //*******************************************************************
 //Error utilities
 //*******************************************************************
-
 class ErrorUtility {
 public:
 	static std::string StringFromHResult(HRESULT hr, bool bDescription = true) {
@@ -60,7 +34,6 @@ protected:
 //*******************************************************************
 //Color utilities
 //*******************************************************************
-
 class ColorUtility {
 public:
 	static inline byte GetA(const D3DCOLOR& color) {
@@ -85,12 +58,22 @@ public:
 		ColorUtility::Clamp(color);
 		return color;
 	}
+
+	static inline D3DCOLOR VectorToD3DColor(const D3DXVECTOR4& vec) {
+		__m128 v1 = Vectorize::Load(vec);
+		v1 = Vectorize::Mul(v1, Vectorize::Replicate(255.0f));
+		return D3DCOLOR_RGBA((int)v1.m128_f32[0], (int)v1.m128_f32[1], 
+			(int)v1.m128_f32[2], (int)v1.m128_f32[3]);
+	}
+	static inline D3DXVECTOR4 D3DColorToVector(const D3DCOLOR& col) {
+		return D3DXVECTOR4(GetR(col) / 255.0f, GetG(col) / 255.0f, 
+			GetB(col) / 255.0f, GetA(col) / 255.0f);
+	}
 };
 
 //*******************************************************************
 //Math utilities
 //*******************************************************************
-
 constexpr double GM_PI = 3.14159265358979323846;
 constexpr double GM_PI_X2 = GM_PI * 2.0;
 constexpr double GM_PI_X4 = GM_PI * 4.0;
@@ -108,6 +91,19 @@ class Math {
 public:
 	static inline constexpr double DegreeToRadian(double angle) { return angle * GM_PI / 180.0; }
 	static inline constexpr double RadianToDegree(double angle) { return angle * 180.0 / GM_PI; }
+
+	static inline double NormalizeAngleDeg(double angle) {
+		angle = fmod(angle, 360.0);
+		return angle < 0.0 ? angle + 360.0 : angle;
+	}
+	static inline double NormalizeAngleRad(double angle) {
+		angle = fmod(angle, GM_PI_X2);
+		return angle < 0.0 ? angle + GM_PI_X2 : angle;
+	}
+	static inline double AngleDifferenceRad(double angle1, double angle2) {
+		double dist = NormalizeAngleRad(angle2 - angle1);
+		return dist > GM_PI ? dist - GM_PI_X2 : dist;
+	}
 
 	template<typename T>
 	static inline T HypotSq(const T& x, const T& y) {
@@ -148,99 +144,8 @@ public:
 };
 
 //*******************************************************************
-//Rect utilities
-//*******************************************************************
-template<typename T>
-class DxRect {
-public:
-	DxRect() : DxRect(0, 0, 0, 0) {}
-	DxRect(T v) : DxRect(v, v, v, v) {}
-	DxRect(T l, T t, T r, T b) : left(l), top(t), right(r), bottom(b) {}
-	DxRect(const DxRect<T>& src) {
-		left = src.left;
-		top = src.top;
-		right = src.right;
-		bottom = src.bottom;
-	}
-	DxRect(const RECT& src) {
-		left = (T)src.left;
-		top = (T)src.top;
-		right = (T)src.right;
-		bottom = (T)src.bottom;
-	}
-	template<typename L>
-	DxRect(const DxRect<L>& src) {
-		left = (T)src.left;
-		top = (T)src.top;
-		right = (T)src.right;
-		bottom = (T)src.bottom;
-	}
-
-	template<typename L>
-	inline DxRect<L> NewAs() {
-		DxRect<L> res = DxRect<L>((L)left, (L)top,
-			(L)right, (L)bottom);
-		return res;
-	}
-	inline void Set(T l, T t, T r, T b) {
-		left = l;
-		top = t;
-		right = r;
-		bottom = b;
-	}
-
-	T GetWidth() const { return right - left; }
-	T GetHeight() const { return bottom - top; }
-
-	static DxRect<T> SetFromIndex(int wd, int ht, int id, int ict, int ox = 0, int oy = 0) {
-		int iw = (id % ict) * wd + ox;
-		int ih = (id / ict) * ht + oy;
-		return DxRect<T>(iw, ih, iw + wd, ih + ht);
-	}
-
-	bool IsIntersected(const DxRect<T>& other) const {
-		return !(other.left > right || other.right < left
-			|| other.top > bottom || other.bottom < top);
-	}
-
-	DxRect<T>& operator+=(const DxRect<T>& other) {
-		left += other.left;
-		top += other.top;
-		right += other.right;
-		bottom += other.bottom;
-		return *this;
-	}
-	DxRect<T>& operator-=(const DxRect<T>& other) {
-		left -= other.left;
-		top -= other.top;
-		right -= other.right;
-		bottom -= other.bottom;
-		return *this;
-	}
-	friend DxRect<T> operator+(DxRect<T> lc, const DxRect<T>& rc) {
-		lc += rc;
-		return lc;
-	}
-	friend DxRect<T> operator+(DxRect<T> lc, const T& rc) {
-		lc += DxRect<T>(rc);
-		return lc;
-	}
-	friend DxRect<T> operator-(DxRect<T> lc, const DxRect<T>& rc) {
-		lc -= rc;
-		return lc;
-	}
-	friend DxRect<T> operator-(DxRect<T> lc, const T& rc) {
-		lc -= DxRect<T>(rc);
-		return lc;
-	}
-public:
-	T left, top, right, bottom;
-};
-
-//*******************************************************************
 //String utilities
 //*******************************************************************
-
 class StringUtility {
 public:
 	static std::string Format(const char* str, ...) {
@@ -264,7 +169,6 @@ public:
 //*******************************************************************
 //Path utilities
 //*******************************************************************
-
 class PathProperty {
 public:
 	static const std::string& GetModuleDirectory() {

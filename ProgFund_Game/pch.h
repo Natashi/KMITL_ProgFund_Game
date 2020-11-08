@@ -111,10 +111,5 @@ using std::weak_ptr;
 namespace stdch = std::chrono;
 namespace stdfs = std::filesystem;
 
-#define CD3DXVECTOR2 const D3DXVECTOR2&
-#define CD3DXVECTOR3 const D3DXVECTOR3&
-
-#define GET_INSTANCE(_type, _name) _type* _name = _type::GetBase();
-
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480

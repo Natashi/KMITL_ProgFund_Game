@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Player.hpp"
 
+#include "Shot.hpp"
+#include "StageMain.hpp"
+
 //*******************************************************************
 //Stage_PlayerTask
 //*******************************************************************
@@ -43,8 +46,10 @@ void Stage_PlayerTask::_Move() {
 
 	if (DIJOYSTATE* statePad = inputManager->GetPadState(0)) {
 		if (statePad->lX != 0 || statePad->lY != 0) {
-			double rateX = std::clamp<double>(statePad->lX / 750.0, -1, 1);		//Left analog X
-			double rateY = std::clamp<double>(statePad->lY / 750.0, -1, 1);		//Left analog Y
+			//double rateX = std::clamp<double>(statePad->lX / 750.0, -1, 1);		//Left analog X
+			//double rateY = std::clamp<double>(statePad->lY / 750.0, -1, 1);		//Left analog Y
+			double rateX = statePad->lX > 200 ? 1 : (statePad->lX < -200 ? -1 : 0);
+			double rateY = statePad->lY > 200 ? 1 : (statePad->lY < -200 ? -1 : 0);
 
 			double speedMax = bFocus_ ? SPEED_SLOW : SPEED_FAST;
 
@@ -116,6 +121,8 @@ void Stage_PlayerTask::Render() {
 	objSprite_.Render();
 }
 void Stage_PlayerTask::Update() {
+	GET_INSTANCE(InputManager, inputManager);
+
 	//Update movement
 	{
 		_Move();
@@ -183,9 +190,29 @@ void Stage_PlayerTask::Update() {
 		}
 	}
 
+	//Shoot
 	{
-		GET_INSTANCE(InputManager, inputManager);
+		KeyState stateShot = inputManager->GetKeyState(VirtualKey::Shot);
 
+		if (frame_ % 6 == 0 && stateShot == KeyState::Push || stateShot == KeyState::Hold) {
+			auto shotManager = ((Stage_MainScene*)parent_)->GetShotManager();
+
+			{
+				auto shot = shotManager->CreateShotA1(
+					D3DXVECTOR2(playerPos_.x - 12, playerPos_.y), 28, -GM_PI_2, ShotPlayerConst::Main, 0);
+				shot->SetAngleZOff(GM_PI_2);
+				shotManager->AddPlayerShot(shot, ShotPolarity::White);
+			}
+			{
+				auto shot = shotManager->CreateShotA1(
+					D3DXVECTOR2(playerPos_.x + 12, playerPos_.y), 28, -GM_PI_2, ShotPlayerConst::Main, 0);
+				shot->SetAngleZOff(GM_PI_2);
+				shotManager->AddPlayerShot(shot, ShotPolarity::White);
+			}
+		}
+	}
+
+	{
 		KeyState stateSlow = inputManager->GetKeyState(VirtualKey::Focus);
 
 		if (stateSlow == KeyState::Push || stateSlow == KeyState::Hold) {
@@ -278,7 +305,7 @@ void Stage_PlayerHitboxTask::Update() {
 	}
 
 	{
-		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayerTask();
+		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayer();
 		objHitbox_.SetX(roundf(objPlayer->GetX()));
 		objHitbox_.SetY(roundf(objPlayer->GetY()));
 	}

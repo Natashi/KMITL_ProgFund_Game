@@ -16,7 +16,10 @@ void ResourceManager::Initialize() {
 	if (base_) throw EngineError("ResourceManager already initialized.");
 	base_ = this;
 
-	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+	WindowMain* window = WindowMain::GetBase();
+	IDirect3DDevice9* device = window->GetDevice();
+
+	window->AddDxResourceListener(this);
 
 	{
 		HRESULT hr = S_OK;
@@ -63,11 +66,26 @@ void ResourceManager::Initialize() {
 	}
 }
 void ResourceManager::Release() {
+	WindowMain* window = WindowMain::GetBase();
+	window->RemoveDxResourceListener(this);
+
 	for (auto itr = mapResource_.begin(); itr != mapResource_.end(); ++itr) {
 		itr->second->UnloadResource();
 		itr->second = nullptr;
 	}
 }
+
+void ResourceManager::OnLostDevice() {
+	for (auto itr = mapResource_.begin(); itr != mapResource_.end(); ++itr) {
+		itr->second->OnLostDevice();
+	}
+}
+void ResourceManager::OnRestoreDevice() {
+	for (auto itr = mapResource_.begin(); itr != mapResource_.end(); ++itr) {
+		itr->second->OnRestoreDevice();
+	}
+}
+
 void ResourceManager::AddResource(shared_ptr<Resource> resource, const std::string& path) {
 	resource->manager_ = this;
 	auto itrFind = mapResource_.find(path);
@@ -122,14 +140,17 @@ void FontResource::UnloadResource() {
 //TextureResource
 //*******************************************************************
 TextureResource::TextureResource() {
-	type_ = Type::Texture;
+	type_ = Resource::Type::Texture;
+	typeTexture_ = Type::Texture;
 	ZeroMemory(&infoImage_, sizeof(D3DXIMAGE_INFO));
 	texture_ = nullptr;
 	surface_ = nullptr;
+	pSurfaceSave_ = nullptr;
 }
 void TextureResource::LoadFromFile(const std::string& path, bool bMipmap) {
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 
+	typeTexture_ = Type::Texture;
 	path_ = path;
 
 	//printf(StringFormat("Loaded texture resource [%s][%dx%d]\n", path.c_str(), 
@@ -155,6 +176,7 @@ void TextureResource::LoadFromFile(const std::string& path, bool bMipmap) {
 void TextureResource::CreateAsRenderTarget(const std::string& name, size_t width, size_t height) {
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 
+	typeTexture_ = Type::RenderTarget;
 	path_ = name;
 
 	auto WrapError = [&](HRESULT hr) {
@@ -186,6 +208,48 @@ void TextureResource::CreateAsRenderTarget(const std::string& name, size_t width
 void TextureResource::UnloadResource() {
 	ptr_release(surface_);
 	ptr_release(texture_);
+}
+
+void TextureResource::OnLostDevice() {
+	if (typeTexture_ != Type::RenderTarget) return;
+
+	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+
+	//Because IDirect3DDevice9::Reset requires me to delete all render targets, 
+	//	this is used to copy back lost data when the render targets are recreated.
+	HRESULT hr = device->CreateOffscreenPlainSurface(infoImage_.Width, infoImage_.Height, infoImage_.Format,
+		D3DPOOL_SYSTEMMEM, &pSurfaceSave_, nullptr);
+	if (SUCCEEDED(hr)) {
+		hr = device->GetRenderTargetData(surface_, pSurfaceSave_);
+		if (FAILED(hr)) {
+			std::string err = StringUtility::Format("Texture::OnLostDevice: "
+				"Failed to create temporary surface [%s]\n\t%s",
+				path_.c_str(), ErrorUtility::StringFromHResult(hr).c_str());
+			ptr_release(pSurfaceSave_);
+			throw EngineError(err);
+		}
+	}
+
+	ptr_release(texture_);
+	ptr_release(surface_);
+}
+void TextureResource::OnRestoreDevice() {
+	if (typeTexture_ != Type::RenderTarget) return;
+	if (pSurfaceSave_ == nullptr) return;
+
+	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+
+	CreateAsRenderTarget(path_, infoImage_.Width, infoImage_.Height);
+
+	HRESULT hr = device->UpdateSurface(pSurfaceSave_, nullptr, surface_, nullptr);
+	if (FAILED(hr)) {
+		std::string err = StringUtility::Format("Texture::OnRestoreDevice: "
+			"Failed to restore surface [%s]\n\t%s",
+			path_.c_str(), ErrorUtility::StringFromHResult(hr).c_str());
+		throw EngineError(err);
+	}
+
+	ptr_release(pSurfaceSave_);
 }
 
 //*******************************************************************
@@ -338,14 +402,22 @@ void ShaderResource::LoadFromFile(const std::string& path, Type type) {
 
 	auto WrapError = [&](HRESULT hr) {
 		if (FAILED(hr)) {
-			std::string effectError = std::string((LPCSTR)pError->GetBufferPointer(), pError->GetBufferSize());
+			std::string effectError = "NULL";
+			if (pError)
+				effectError = std::string((LPCSTR)pError->GetBufferPointer(), pError->GetBufferSize());
 			throw EngineError(StringUtility::Format("Failed to load shader resource [%s][type=%s]\n\t%s\n%s",
 				path.c_str(), strType, ErrorUtility::StringFromHResult(hr).c_str(), effectError.c_str()));
 		}
 	};
 
-	WrapError(D3DXCreateEffectFromFileExA(device, path.c_str(), nullptr, nullptr, nullptr,
-		0, nullptr, &effect_, &pError));
+	DWORD flags = 0;
+#ifdef _DEBUG
+	flags |= D3DXSHADER_DEBUG;
+#endif
+
+	HRESULT hr = D3DXCreateEffectFromFileExA(device, path.c_str(), nullptr, nullptr, nullptr,
+		flags, nullptr, &effect_, &pError);
+	WrapError(hr);
 
 	WrapError(effect_->GetDesc(&effectDesc_));
 	if (effectDesc_.Techniques > 0)
@@ -365,4 +437,13 @@ D3DXHANDLE ShaderResource::SetTechniqueByName(const char* name) {
 void ShaderResource::SetTechnique(D3DXHANDLE name) {
 	if (effect_ == nullptr) return;
 	effect_->SetTechnique(name);
+}
+
+void ShaderResource::OnLostDevice() {
+	if (effect_ == nullptr) return;
+	effect_->OnLostDevice();
+}
+void ShaderResource::OnRestoreDevice() {
+	if (effect_ == nullptr) return;
+	effect_->OnResetDevice();
 }
