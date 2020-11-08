@@ -96,7 +96,8 @@ private:
 	double angleA, angleB, angleC;
 public:
 	Stage_ShotTest(Scene* parent) : TaskBase(parent) {
-		angleA = 2.7488935;
+		GET_INSTANCE(RandProvider, randGen);
+		angleA = randGen->GetReal(0, GM_PI);
 		angleB = 0;
 		angleC = 0.0029269908;
 	};
@@ -106,9 +107,6 @@ public:
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
 
 		if (frame_ > 120 && frame_ % 3 == 0) {
-			GET_INSTANCE(RandProvider, randGen);
-			double ang = randGen->GetReal(0, GM_PI);
-
 			for (int i = 0; i < 8; ++i) {
 				shotManager->AddEnemyShot(shotManager->CreateShotA1(
 					D3DXVECTOR2(320, 128), 2, angleA + GM_PI_X2 * (i / 8.0f), ShotConst::CyanRiceS, 20),
