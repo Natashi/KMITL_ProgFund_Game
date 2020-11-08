@@ -174,7 +174,7 @@ public:
 		auto itrFind = mapResource_.find(name);
 		if (itrFind == mapResource_.end()) {
 			res = std::make_shared<T>();
-			res->LoadFromFile(PathProperty::GetModuleDirectory() + path);
+			res->LoadFromFile(PathProperty::GetWorkingDirectory() + path);
 			this->AddResource(res, name);
 		}
 		else res = std::dynamic_pointer_cast<T>(itrFind->second);

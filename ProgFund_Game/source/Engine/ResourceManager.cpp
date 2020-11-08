@@ -58,7 +58,7 @@ void ResourceManager::Initialize() {
 	}
 	{
 		shaderDefault_ = std::make_shared<ShaderResource>();
-		shaderDefault_->LoadFromFile(PathProperty::GetModuleDirectory() + "resource/shader/default_2d.fx");
+		shaderDefault_->LoadFromFile(PathProperty::GetWorkingDirectory() + "resource/shader/default_2d.fx");
 
 		shaderDefault_->SetTechniqueByName("Render");
 

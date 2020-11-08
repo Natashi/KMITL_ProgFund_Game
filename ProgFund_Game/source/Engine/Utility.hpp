@@ -182,6 +182,16 @@ public:
 		}
 		return moduleDir;
 	}
+	static const std::string& GetWorkingDirectory() {
+		static std::string dir;
+		if (dir.size() == 0) {
+			char path[MAX_PATH];
+			GetCurrentDirectoryA(MAX_PATH, path);
+			dir = stdfs::path(path).make_preferred().generic_string();
+			dir = dir + "/";
+		}
+		return dir;
+	}
 	static std::string GetUnique(const std::string& srcPath) {
 		std::string p = stdfs::weakly_canonical(srcPath).make_preferred().generic_string();
 		return p;
