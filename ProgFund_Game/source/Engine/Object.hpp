@@ -87,6 +87,7 @@ public:
 	virtual void SetX(float x) { position_.x = x; }
 	virtual void SetY(float y) { position_.y = y; }
 	virtual void SetZ(float z) { position_.z = z; }
+	const D3DXVECTOR3& GetPosition() const { return position_; }
 
 	virtual void SetAngle(float x, float y, float z) { 
 		SetAngleX(x);
@@ -99,12 +100,14 @@ public:
 	virtual void SetAngleX(float x);
 	virtual void SetAngleY(float y);
 	virtual void SetAngleZ(float z);
+	const D3DXVECTOR3& GetAngle() const { return angle_; }
 
 	virtual void SetScale(float x, float y, float z) { scale_ = D3DXVECTOR3(x, y, z); }
 	virtual void SetScale(CD3DXVECTOR3 scale) { scale_ = scale; }
 	virtual void SetScaleX(float x) { scale_.x = x; }
 	virtual void SetScaleY(float y) { scale_.y = y; }
 	virtual void SetScaleZ(float z) { scale_.z = z; }
+	const D3DXVECTOR3& GetScale() const { return scale_; }
 
 	virtual void SetColor(DWORD rgb) { 
 		SetColor((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
@@ -217,8 +220,8 @@ public:
 
 	virtual void Initialize();
 
-	void SetSourceRectNormalized(const DxRect<float>& rc);
-	void SetSourceRect(const DxRect<int>& rc);
-	void SetDestRect(const DxRect<float>& rc);
+	void SetSourceRectNormalized(const DxRectangle<float>& rc);
+	void SetSourceRect(const DxRectangle<int>& rc);
+	void SetDestRect(const DxRectangle<float>& rc);
 	void SetDestCenter();
 };

@@ -153,14 +153,14 @@ void TextureResource::LoadFromFile(const std::string& path, bool bMipmap) {
 	typeTexture_ = Type::Texture;
 	path_ = path;
 
-	//printf(StringFormat("Loaded texture resource [%s][%dx%d]\n", path.c_str(), 
-	//	(int)texture_.getSize().x, (int)texture_.getSize().y).c_str());
-
 	auto WrapError = [&](HRESULT hr) {
 		if (FAILED(hr))
 			throw EngineError(StringUtility::Format("Failed to load texture resource [%s]\n\t%s",
 				path.c_str(), ErrorUtility::StringFromHResult(hr).c_str()));
 	};
+
+	if (!PathProperty::IsFileExists(path))
+		WrapError(__HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
 
 	WrapError(D3DXGetImageInfoFromFileA(path.c_str(), &infoImage_));
 	WrapError(D3DXCreateTextureFromFileExA(device, path.c_str(), 
@@ -268,6 +268,9 @@ void SoundResource::LoadFromFile(const std::string& path) {
 		throw EngineError(StringUtility::Format("Failed to load sound resource [%s]\n\t%s",
 			path.c_str(), error.c_str()));
 	};
+
+	if (!PathProperty::IsFileExists(path))
+		SetError(ErrorUtility::StringFromHResult(__HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
 
 	GET_INSTANCE(SoundManager, soundManager);
 
@@ -409,6 +412,9 @@ void ShaderResource::LoadFromFile(const std::string& path, Type type) {
 				path.c_str(), strType, ErrorUtility::StringFromHResult(hr).c_str(), effectError.c_str()));
 		}
 	};
+
+	if (!PathProperty::IsFileExists(path))
+		WrapError(__HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
 
 	DWORD flags = 0;
 #ifdef _DEBUG

@@ -3,6 +3,7 @@
 #include "../../pch.h"
 
 #include "VectorExtensions.hpp"
+#include "Shape.hpp"
 #include "Table.hpp"
 #include "Rand.hpp"
 
@@ -195,5 +196,10 @@ public:
 	static std::string GetUnique(const std::string& srcPath) {
 		std::string p = stdfs::weakly_canonical(srcPath).make_preferred().generic_string();
 		return p;
+	}
+	static bool IsFileExists(const std::string& path) {
+		stdfs::path p(path);
+		bool res = stdfs::exists(p) && (stdfs::status(p).type() == stdfs::file_type::regular);
+		return res;
 	}
 };

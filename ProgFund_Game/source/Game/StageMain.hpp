@@ -36,7 +36,7 @@ private:
 	shared_ptr<Stage_PlayerTask> pTaskPlayer_;
 	shared_ptr<Stage_ShotManager> pTaskShotManager_;
 
-	DxRect<int> rcStgFrame_;
+	DxRectangle<int> rcStgFrame_;
 public:
 	Stage_MainScene(SceneManager* manager);
 	~Stage_MainScene();

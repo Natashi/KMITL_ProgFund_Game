@@ -14,7 +14,7 @@ CONSTRUCT_TASK(Stage_PlayerTask) {
 	moveSpeedY_ = 0;
 
 	playerPos_ = D3DXVECTOR2(0, 0);
-	rcClip_ = DxRect<int>(0, 0, 640, 480);
+	rcClip_ = DxRectangle<int>(0, 0, 640, 480);
 
 	frameAnimLeft_ = 0;
 	frameAnimRight_ = 0;
@@ -27,7 +27,7 @@ CONSTRUCT_TASK(Stage_PlayerTask) {
 		auto texturePlayer = resourceManager->GetResourceAs<TextureResource>("img/player/pl00.png");
 
 		objSprite_.SetTexture(texturePlayer);
-		objSprite_.SetSourceRect(DxRect(0, 0, 32, 48));
+		objSprite_.SetSourceRect(DxRectangle(0, 0, 32, 48));
 		objSprite_.SetDestCenter();
 		objSprite_.UpdateVertexBuffer();
 	}
@@ -117,11 +117,17 @@ void Stage_PlayerTask::_Move() {
 	}
 }
 
-void Stage_PlayerTask::Render() {
+void Stage_PlayerTask::Render(byte layer) {
+	if (layer != LAYER_PLAYER) return;
 	objSprite_.Render();
 }
 void Stage_PlayerTask::Update() {
 	GET_INSTANCE(InputManager, inputManager);
+
+	KeyState stateShot = inputManager->GetKeyState(VirtualKey::Shot);
+	KeyState stateSlow = inputManager->GetKeyState(VirtualKey::Focus);
+
+	bFocus_ = stateSlow == KeyState::Push || stateSlow == KeyState::Hold;
 
 	//Update movement
 	{
@@ -182,7 +188,7 @@ void Stage_PlayerTask::Update() {
 					imgRender = listSpriteIdle[aFrame];
 				}
 
-				DxRect<int> frameRect = DxRect<int>::SetFromIndex(32, 48, imgRender, 10);
+				DxRectangle<int> frameRect = DxRectangle<int>::SetFromIndex(32, 48, imgRender, 10);
 				objSprite_.SetScroll(frameRect.left / 256.0, frameRect.top / 256.0);
 				//objSprite_.SetSourceRect(frameRect);
 				//objSprite_.UpdateVertexBuffer();
@@ -192,48 +198,79 @@ void Stage_PlayerTask::Update() {
 
 	//Shoot
 	{
-		KeyState stateShot = inputManager->GetKeyState(VirtualKey::Shot);
+		static size_t sFrame = 0;
 
-		if (frame_ % 6 == 0 && stateShot == KeyState::Push || stateShot == KeyState::Hold) {
+		if (stateShot == KeyState::Push || stateShot == KeyState::Hold) {
 			auto shotManager = ((Stage_MainScene*)parent_)->GetShotManager();
 
-			{
-				auto shot = shotManager->CreateShotA1(
-					D3DXVECTOR2(playerPos_.x - 12, playerPos_.y), 28, -GM_PI_2, ShotPlayerConst::Main, 0);
-				shot->SetAngleZOff(GM_PI_2);
+			auto AddShot = [&](int index, D3DXVECTOR2 pos, float sp, double ang, int gr) {
+				if (index < 0) pos += playerPos_;
+				else {
+					if (taskOption_[index] == nullptr) return;
+					pos += taskOption_[index]->GetPosition();
+				}
+
+				auto shot = shotManager->CreateShotA1(ShotOwnerType::Player,
+					pos, sp, -GM_PI_2 + ang, gr, 0);
+				shot->SetAngleZOff(-GM_PI_2);
 				shotManager->AddPlayerShot(shot, ShotPolarity::White);
+			};
+
+			if (frame_ % 6 == 0) {
+				AddShot(-1, D3DXVECTOR2(10, 32), 48, 0, ShotPlayerConst::Main);
+				AddShot(-1, D3DXVECTOR2(-10, 32), 48, 0, ShotPlayerConst::Main);
 			}
-			{
-				auto shot = shotManager->CreateShotA1(
-					D3DXVECTOR2(playerPos_.x + 12, playerPos_.y), 28, -GM_PI_2, ShotPlayerConst::Main, 0);
-				shot->SetAngleZOff(GM_PI_2);
-				shotManager->AddPlayerShot(shot, ShotPolarity::White);
+
+			if (!bFocus_) {
+				if (frame_ % 8) goto lab_shot_exit;
+				double angOff = Math::DegreeToRadian(8 + sFrame * 8);
+				AddShot(0, D3DXVECTOR2(0, 0), 5, -angOff, ShotPlayerConst::Homing);
+				AddShot(1, D3DXVECTOR2(0, 0), 5, angOff, ShotPlayerConst::Homing);
+				sFrame = (sFrame + 1) % 5;
 			}
+			else {
+				if (frame_ % 5) goto lab_shot_exit;
+				AddShot(0, D3DXVECTOR2(-8, 4), 28, 0, ShotPlayerConst::Needle);
+				AddShot(0, D3DXVECTOR2(8, 4), 28, 0, ShotPlayerConst::Needle);
+
+				AddShot(1, D3DXVECTOR2(-8, 4), 28, 0, ShotPlayerConst::Needle);
+				AddShot(1, D3DXVECTOR2(8, 4), 28, 0, ShotPlayerConst::Needle);
+			}
+lab_shot_exit:;
 		}
 	}
 
 	{
-		KeyState stateSlow = inputManager->GetKeyState(VirtualKey::Focus);
-
-		if (stateSlow == KeyState::Push || stateSlow == KeyState::Hold) {
-			if (taskHitbox1_ == nullptr) {
-				taskHitbox1_ = shared_ptr<Stage_PlayerHitboxTask>(
+		if (bFocus_) {
+			if (*taskHitbox_ == nullptr) {
+				taskHitbox_[0] = shared_ptr<Stage_PlayerHitboxTask>(
 					new Stage_PlayerHitboxTask(parent_, 255, 160, 0.3, 12, -180, 180, 3));
-				taskHitbox2_ = shared_ptr<Stage_PlayerHitboxTask>(
+				taskHitbox_[1] = shared_ptr<Stage_PlayerHitboxTask>(
 					new Stage_PlayerHitboxTask(parent_, 0, 255, 1.2, 18, 0, 0, -2));
 
-				parent_->AddTask(taskHitbox1_);
-				parent_->AddTask(taskHitbox2_);
+				parent_->AddTask(taskHitbox_[0]);
+				parent_->AddTask(taskHitbox_[1]);
 			}
 		}
-		else if (stateSlow == KeyState::Pull || stateSlow == KeyState::Free) {
-			if (taskHitbox1_ != nullptr) {
-				taskHitbox1_->bEnd_ = true;
-				taskHitbox2_->bEnd_ = true;
+		else {
+			if (*taskHitbox_ != nullptr) {
+				taskHitbox_[0]->bEnd_ = true;
+				taskHitbox_[1]->bEnd_ = true;
 
-				taskHitbox1_ = nullptr;		//Removes a reference
-				taskHitbox2_ = nullptr;
+				taskHitbox_[0] = nullptr;		//Removes a reference
+				taskHitbox_[1] = nullptr;
 			}
+		}
+	}
+	{
+		if (*taskOption_ == nullptr) {
+			taskOption_[0] = shared_ptr<Stage_PlayerOptionTask>(
+				new Stage_PlayerOptionTask(parent_, D3DXVECTOR2(-36, 36), D3DXVECTOR2(-15, -32), 1));
+			taskOption_[1] = shared_ptr<Stage_PlayerOptionTask>(
+				new Stage_PlayerOptionTask(parent_, D3DXVECTOR2(36, 36), D3DXVECTOR2(15, -32), -1));
+
+			parent_->AddTask(taskOption_[0]);
+			parent_->AddTask(taskOption_[1]);
 		}
 	}
 
@@ -266,7 +303,7 @@ Stage_PlayerHitboxTask::Stage_PlayerHitboxTask(Scene* parent, int s_alpha, int e
 		auto textureHitbox = resourceManager->GetResourceAs<TextureResource>("img/player/eff_sloweffect.png");
 
 		objHitbox_.SetTexture(textureHitbox);
-		objHitbox_.SetSourceRect(DxRect(0, 0, 63, 63));
+		objHitbox_.SetSourceRect(DxRectangle(0, 0, 63, 63));
 		objHitbox_.SetDestCenter();
 		objHitbox_.UpdateVertexBuffer();
 	}
@@ -276,7 +313,8 @@ Stage_PlayerHitboxTask::Stage_PlayerHitboxTask(Scene* parent, int s_alpha, int e
 	objHitbox_.SetAngleZ(Math::DegreeToRadian(tAngle_));
 }
 
-void Stage_PlayerHitboxTask::Render() {
+void Stage_PlayerHitboxTask::Render(byte layer) {
+	if (layer != LAYER_SHOT + 1) return;
 	objHitbox_.Render();
 }
 void Stage_PlayerHitboxTask::Update() {
@@ -311,6 +349,86 @@ void Stage_PlayerHitboxTask::Update() {
 	}
 	objHitbox_.SetScale(tScale_, tScale_, 1.0f);
 	objHitbox_.SetAngleZ(Math::DegreeToRadian(tAngle_));
+
+	++frame_;
+}
+
+//*******************************************************************
+//Stage_PlayerOptionTask
+//*******************************************************************
+Stage_PlayerOptionTask::Stage_PlayerOptionTask(Scene* parent, 
+	CD3DXVECTOR2 posUF, CD3DXVECTOR2 posF, double dir) : TaskBase(parent)
+{
+	frameSub_ = 0;
+	bEnd_ = false;
+
+	posUnFocus_ = posUF;
+	posFocus_ = posF;
+	direction_ = dir;
+
+	{
+		GET_INSTANCE(ResourceManager, resourceManager);
+
+		auto textureOption = resourceManager->GetResourceAs<TextureResource>("img/player/pl00.png");
+
+		objOption_.SetTexture(textureOption);
+		objOption_.SetSourceRect(DxRectangle<float>::SetFromSize(64, 144, 15, 15));
+		objOption_.SetDestCenter();
+		objOption_.UpdateVertexBuffer();
+	}
+
+	{
+		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayer();
+		position_ = objPlayer->GetPosition();
+	}
+}
+
+void Stage_PlayerOptionTask::Render(byte layer) {
+	if (layer != LAYER_OPTION) return;
+	objOption_.Render();
+}
+void Stage_PlayerOptionTask::Update() {
+	double tScale = 1.0;
+
+	if (!bEnd_) {
+		if (frame_ < 16) {
+			tScale = Math::Lerp::Smooth<double>(0, 1, frame_ / 15.0);
+		}
+		else {
+			tScale = 1;
+		}
+
+		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayer();
+
+		float tx = objPlayer->GetX();
+		float ty = objPlayer->GetY();
+		if (objPlayer->IsFocus()) {
+			tx += posFocus_.x;
+			ty += posFocus_.y;
+		}
+		else {
+			tx += posUnFocus_.x;
+			ty += posUnFocus_.y;
+		}
+
+		position_.x = Math::Lerp::Linear(position_.x, tx, 0.3);
+		position_.y = Math::Lerp::Linear(position_.y, ty, 0.3);
+	}
+	else {
+		static double lScale;
+		if (frameEnd_ == UINT_MAX) {
+			frameEnd_ = frame_ + 12;
+			lScale = tScale;
+		}
+
+		tScale = Math::Lerp::Smooth<double>(lScale, 0, frameSub_ / 12.0);
+
+		++frameSub_;
+	}
+
+	objOption_.SetPosition(position_ - D3DXVECTOR2(1, 1));
+	objOption_.SetScale(tScale, tScale, 1.0);
+	objOption_.SetAngleZ(frame_ * Math::DegreeToRadian(2.7) * direction_);
 
 	++frame_;
 }

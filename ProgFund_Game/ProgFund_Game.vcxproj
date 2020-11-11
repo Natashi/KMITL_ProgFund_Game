@@ -209,6 +209,7 @@
     <ClInclude Include="source\Engine\DxConstant.hpp" />
     <ClInclude Include="source\Engine\Object.hpp" />
     <ClInclude Include="source\Engine\Rand.hpp" />
+    <ClInclude Include="source\Engine\Shape.hpp" />
     <ClInclude Include="source\Engine\Sound.hpp" />
     <ClInclude Include="source\Engine\Table.hpp" />
     <ClInclude Include="source\Engine\VectorExtensions.hpp" />

@@ -68,8 +68,8 @@ Stage_MainSceneUI::Stage_MainSceneUI(SceneManager* manager) : Scene(manager) {
 	{
 		auto textureFrame = resourceManager->GetResourceAs<TextureResource>("img/stage/stg_frame.png");
 		objFrame_.SetTexture(textureFrame);
-		objFrame_.SetSourceRect(DxRect(0, 0, 640, 480));
-		objFrame_.SetDestRect(DxRect(0, 0, 640, 480));
+		objFrame_.SetSourceRect(DxRectangle(0, 0, 640, 480));
+		objFrame_.SetDestRect(DxRectangle(0, 0, 640, 480));
 		objFrame_.UpdateVertexBuffer();
 	}
 	objFrame_.SetBlendType(BlendMode::Invert);
@@ -108,7 +108,7 @@ public:
 
 		if (frame_ > 120 && frame_ % 3 == 0) {
 			for (int i = 0; i < 8; ++i) {
-				shotManager->AddEnemyShot(shotManager->CreateShotA1(
+				shotManager->AddEnemyShot(shotManager->CreateShotA1(ShotOwnerType::Enemy,
 					D3DXVECTOR2(320, 128), 2, angleA + GM_PI_X2 * (i / 8.0f), ShotConst::CyanRiceS, 20),
 					ShotPolarity::White);
 			}
@@ -123,12 +123,12 @@ public:
 Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	GET_INSTANCE(ResourceManager, resourceManager);
 
-	rcStgFrame_ = DxRect<int>(128, 16, 512, 464);
+	rcStgFrame_ = DxRectangle<int>(128, 16, 512, 464);
 
 	{
 		pTaskPlayer_ = std::make_shared<Stage_PlayerTask>(this);
 		
-		DxRect<int> rcMargin(12, 36, -12, -16);
+		DxRectangle<int> rcMargin(12, 36, -12, -16);
 		pTaskPlayer_->SetClip(rcStgFrame_ + rcMargin);
 
 		pTaskPlayer_->SetX((rcStgFrame_.left + rcStgFrame_.right) / 2);
@@ -139,8 +139,8 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	{
 		pTaskShotManager_ = std::make_shared<Stage_ShotManager>(this);
 
-		DxRect<int> rcMargin(-64, -64, 64, 64);
-		pTaskShotManager_->SetClip(DxRect<int>(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT) + rcMargin);
+		DxRectangle<int> rcMargin(-64, -64, 64, 64);
+		pTaskShotManager_->SetClip(DxRectangle<int>(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT) + rcMargin);
 
 		pTaskShotManager_->LoadEnemyShotData();
 		pTaskShotManager_->LoadPlayerShotData();

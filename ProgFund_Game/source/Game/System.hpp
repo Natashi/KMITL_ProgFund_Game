@@ -3,11 +3,16 @@
 
 #include "GConstant.hpp"
 
+static constexpr byte LAYER_PLAYER = 2;
+static constexpr byte LAYER_OPTION = 3;
+
+static constexpr byte LAYER_SHOT = 7;
+
 class SystemUtility {
 private:
 	SystemUtility() {};	//Static class
 public:
-	static DxRect<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {
+	static DxRectangle<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {
 		int rect_i[] = { 0, 32 };
 
 #define DEF_RECT(chr, row, index) case chr: rect_i[0] = row * 32 + index; break;
@@ -124,7 +129,7 @@ public:
 		}
 #undef DEF_RECT
 
-		return DxRect<int>::SetFromIndex(rect_w, rect_h, rect_i[0], rect_i[1]);
+		return DxRectangle<int>::SetFromIndex(rect_w, rect_h, rect_i[0], rect_i[1]);
 	}
 };
 
@@ -162,8 +167,8 @@ public:
 		framePos_[2] = frameOut;
 		frameEnd_ = frameIn + frameStay + frameOut + 1;
 		{
-			objFade_.SetSourceRect(DxRect(0, 0, 640, 480));
-			objFade_.SetDestRect(DxRect(0, 0, 640, 480));
+			objFade_.SetSourceRect(DxRectangle(0, 0, 640, 480));
+			objFade_.SetDestRect(DxRectangle(0, 0, 640, 480));
 			objFade_.SetColor(color);
 			objFade_.UpdateVertexBuffer();
 		}

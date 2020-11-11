@@ -60,8 +60,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 			anime->pAttachedRenderer_ = rendererDelay;
 
 			Stage_ShotAnimation::Frame frame = {
-				DxRect<float>::SetFromIndex(64, 64, i - ShotConst::RedDelay, 4),
-				DxRect<float>(-32, -32, 32, 32), 1
+				DxRectangle<float>::SetFromIndex(64, 64, i - ShotConst::RedDelay, 4),
+				DxRectangle<float>(-32, -32, 32, 32), 1
 			};
 			anime->AddFrame(frame);
 
@@ -81,8 +81,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(8, 8, c, 8, 0, yOff),
-					DxRect<float>(-4, -4, 4, 4), 1
+					DxRectangle<float>::SetFromIndex(8, 8, c, 8, 0, yOff),
+					DxRectangle<float>(-4, -4, 4, 4), 1
 				};
 				anime->AddFrame(frame);
 
@@ -117,8 +117,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(16, 16, c, 8, 0, yOff),
-					DxRect<float>(-8, -8, 8, 8), 1
+					DxRectangle<float>::SetFromIndex(16, 16, c, 8, 0, yOff),
+					DxRectangle<float>(-8, -8, 8, 8), 1
 				};
 				anime->AddFrame(frame);
 
@@ -151,8 +151,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
-					DxRect<float>(-16, -16, 16, 16), 1
+					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
+					DxRectangle<float>(-16, -16, 16, 16), 1
 				};
 				anime->AddFrame(frame);
 
@@ -172,8 +172,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(64, 64, c, 8, 0, yOff),
-					DxRect<float>(-32, -32, 32, 32), 1
+					DxRectangle<float>::SetFromIndex(64, 64, c, 8, 0, yOff),
+					DxRectangle<float>(-32, -32, 32, 32), 1
 				};
 				anime->AddFrame(frame);
 
@@ -198,15 +198,15 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
-					DxRect<float>(-16, -16, 16, 16), 4
+					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
+					DxRectangle<float>(-16, -16, 16, 16), 4
 				};
 				anime->AddFrame(frame);
-				frame.rcSrc += DxRect<float>(0, 32, 0, 32);
+				frame.rcSrc += DxRectangle<float>(0, 32, 0, 32);
 				anime->AddFrame(frame);
-				frame.rcSrc += DxRect<float>(0, 32, 0, 32);
+				frame.rcSrc += DxRectangle<float>(0, 32, 0, 32);
 				anime->AddFrame(frame);
-				frame.rcSrc -= DxRect<float>(0, 32, 0, 32);
+				frame.rcSrc -= DxRectangle<float>(0, 32, 0, 32);
 				anime->AddFrame(frame);
 
 				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
@@ -225,8 +225,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRect<float>::SetFromIndex(16, 32, c, 8, 0, yOff),
-					DxRect<float>(-8, -16, 8, 16), 1
+					DxRectangle<float>::SetFromIndex(16, 32, c, 8, 0, yOff),
+					DxRectangle<float>(-8, -16, 8, 16), 1
 				};
 				anime->AddFrame(frame);
 
@@ -241,7 +241,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 		auto& listFrame = itr->second->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
 			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
-			listFrame[iFrame].rcSrc /= DxRect<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
+			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
 			if (iFrame == 0) {
 				itr->second->width_ = listFrame[iFrame].rcDst.GetWidth();
 				itr->second->height_ = listFrame[iFrame].rcDst.GetHeight();
@@ -266,62 +266,62 @@ void Stage_ShotManager::LoadPlayerShotData() {
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(192, 144, 64, 16),
-			DxRect<float>(-32, -8, 32, 8), 1
+			DxRectangle<float>::SetFromSize(192, 144, 64, 16),
+			DxRectangle<float>(-32, -8, 32, 8), 1
 		};
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::Main] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::Main] = anime;
 	}
 	{
 		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer);
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(0, 144, 16, 16),
-			DxRect<float>(-8, -8, 8, 8), 4
+			DxRectangle<float>::SetFromSize(0, 144, 16, 16),
+			DxRectangle<float>(-8, -8, 8, 8), 4
 		};
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::_Main] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::_Main] = anime;
 	}
 
 	//Homing
 	{
-		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer);
+		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer, 8, false);
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(0, 160, 16, 16),
-			DxRect<float>(-8, -8, 8, 8), 1
+			DxRectangle<float>::SetFromSize(0, 160, 16, 16),
+			DxRectangle<float>(-8, -8, 8, 8), 1
 		};
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::Homing] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::Homing] = anime;
 	}
 	{
-		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer);
+		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer, 12, false);
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(0, 160, 16, 16),
-			DxRect<float>(-8, -8, 8, 8), 4
+			DxRectangle<float>::SetFromSize(0, 160, 16, 16),
+			DxRectangle<float>(-8, -8, 8, 8), 4
 		};
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(16, 0, 16, 0);
+		frame.rcSrc += DxRectangle<float>(16, 0, 16, 0);
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::_Homing] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::_Homing] = anime;
 	}
 
 	//Needle
@@ -330,28 +330,28 @@ void Stage_ShotManager::LoadPlayerShotData() {
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(0, 176, 64, 16),
-			DxRect<float>(-32, -8, 32, 8), 5
+			DxRectangle<float>::SetFromSize(0, 176, 64, 16),
+			DxRectangle<float>(-32, -8, 32, 8), 5
 		};
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(64, 0, 64, 0);
+		frame.rcSrc += DxRectangle<float>(64, 0, 64, 0);
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::Needle] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::Needle] = anime;
 	}
 	{
 		Stage_ShotAnimation* anime = new Stage_ShotAnimation(texturePlayer);
 		anime->pAttachedRenderer_ = rendererPlayer;
 
 		Stage_ShotAnimation::Frame frame = {
-			DxRect<float>::SetFromSize(0, 192, 64, 16),
-			DxRect<float>(-32, -8, 32, 8), 5
+			DxRectangle<float>::SetFromSize(0, 192, 64, 32),
+			DxRectangle<float>(-32, -16, 32, 16), 5
 		};
 		anime->AddFrame(frame);
-		frame.rcSrc += DxRect<float>(64, 0, 64, 0);
+		frame.rcSrc += DxRectangle<float>(64, 0, 64, 0);
 		anime->AddFrame(frame);
 
-		mapShotDataEnemy_[ShotPlayerConst::NeedleB] = anime;
+		mapShotDataPlayer_[ShotPlayerConst::NeedleB] = anime;
 	}
 
 	//Normalize rects
@@ -360,7 +360,7 @@ void Stage_ShotManager::LoadPlayerShotData() {
 		auto& listFrame = itr->second->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
 			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
-			listFrame[iFrame].rcSrc /= DxRect<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
+			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
 			if (iFrame == 0) {
 				itr->second->width_ = listFrame[iFrame].rcDst.GetWidth();
 				itr->second->height_ = listFrame[iFrame].rcDst.GetHeight();
@@ -393,8 +393,11 @@ void Stage_ShotManager::AddPlayerShot(shared_ptr<Stage_ObjShot> obj, ShotPolarit
 	obj->polarity_ = polarity;
 	listShotPlayer_.push_back(obj);
 }
-shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(CD3DXVECTOR2 pos, double speed, double angle, int graphic, size_t delay) {
+shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos, 
+	double speed, double angle, int graphic, size_t delay) 
+{
 	shared_ptr<Stage_ObjShot> nShot = shared_ptr<Stage_ObjShot>(new Stage_ObjShot(this));
+	nShot->typeOwner_ = typeOwner;
 	nShot->Stage_ObjMove::SetX(pos.x);
 	nShot->Stage_ObjMove::SetY(pos.y);
 	nShot->SetSpeed(speed);
@@ -405,11 +408,15 @@ shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(CD3DXVECTOR2 pos, doub
 	return nShot;
 }
 
-void Stage_ShotManager::Render() {
-	for (auto itr = listShotPlayer_.begin(); itr != listShotPlayer_.end(); ++itr)
-		(*itr)->Render();
-	for (auto itr = listShotEnemy_.begin(); itr != listShotEnemy_.end(); ++itr)
-		(*itr)->Render();
+void Stage_ShotManager::Render(byte layer) {
+	for (auto& iShot : listShotPlayer_) {
+		if (iShot->GetRenderPriorityI() == layer)
+			iShot->Render();
+	}
+	for (auto& iShot : listShotEnemy_) {
+		if (iShot->GetRenderPriorityI() == layer)
+			iShot->Render();
+	}
 
 	{
 		WindowMain* window = WindowMain::GetBase();
@@ -435,8 +442,6 @@ void Stage_ShotManager::Render() {
 
 			device->SetTexture(0, itrSet->first->GetTexture());
 			//device->SetTexture(0, nullptr);
-
-			window->SetBlendMode(BlendMode::Alpha);
 
 			{
 				UINT cPass = 1U;
@@ -572,7 +577,7 @@ Stage_ShotAnimation::Stage_ShotAnimation(shared_ptr<TextureResource> texture, do
 	width_ = texture_->GetImageInfo()->Width;
 	height_ = texture_->GetImageInfo()->Height;
 
-	spin_ = spin;
+	spin_ = Math::DegreeToRadian(spin);
 	bFixedAngle_ = fixedAngle;
 }
 
@@ -590,11 +595,21 @@ Stage_ShotAnimation::Frame* Stage_ShotAnimation::GetFrame(size_t frame) {
 	return nullptr;
 }
 
+Stage_ShotRenderer* Stage_ShotAnimation::GetRendererFromBlendType(BlendMode blend) {
+	if (pAttachedRenderer_ == nullptr) return nullptr;
+	auto itrFind = pAttachedRenderer_->find(blend);
+	if (itrFind != pAttachedRenderer_->end())
+		return itrFind->second;
+	return nullptr;
+}
+
 //*******************************************************************
 //Stage_ObjShot
 //*******************************************************************
 Stage_ObjShot::Stage_ObjShot(Stage_ShotManager* manager) {
 	shotManager_ = manager;
+
+	SetRenderPriority(LAYER_SHOT);
 
 	polarity_ = ShotPolarity::White;
 	typeOwner_ = ShotOwnerType::Enemy;
@@ -626,7 +641,7 @@ void Stage_ObjShot::_DeleteInLife() {
 void Stage_ObjShot::_DeleteInAutoClip() {
 	if (bDelete_) return;
 	if (frameClipImmune_ == 0) {
-		const DxRect<int>* clip = shotManager_->GetClip();
+		const DxRectangle<int>* clip = shotManager_->GetClip();
 
 		if (posX_ < clip->left || posX_ > clip->right || posY_ < clip->top || posY_ > clip->bottom)
 			bDelete_ = true;
@@ -658,14 +673,31 @@ void Stage_ObjShot::SetShotData(Stage_ShotAnimation* id) {
 	pShotData_ = id;
 }
 
+void Stage_ObjShot::_LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>* rcDst, 
+	D3DCOLOR color, float scale, CD3DXVECTOR2 pos)
+{
+	float scx = scale_.x * scale;
+	float scy = scale_.y * scale;
+
+	VertexTLX* pVertex = vertex_.data();
+	SetSourceRectNormalized(pVertex, rcSrc);
+	SetDestRect(pVertex, rcDst);
+	for (int i = 0; i < 4; ++i) {
+		float vx = pVertex[i].position.x * scx;
+		float vy = pVertex[i].position.y * scy;
+		pVertex[i].position.x = (vx * angleZ_.x - vy * angleZ_.y) + pos.x;
+		pVertex[i].position.y = (vx * angleZ_.y + vy * angleZ_.x) + pos.y;
+	}
+	SetColor(pVertex, color);
+}
 HRESULT Stage_ObjShot::Render() {
-	if (bDelete_) return D3DERR_INVALIDCALL;
+	if (bDelete_) return E_FAIL;
 	if (pShotData_ == nullptr) return D3DERR_INVALIDCALL;
 
 	Stage_ShotRenderer* renderer = nullptr;
 
-	DxRect<float>* rcSrc = nullptr;
-	DxRect<float>* rcDst = nullptr;
+	DxRectangle<float>* rcSrc = nullptr;
+	DxRectangle<float>* rcDst = nullptr;
 
 	float scale = 1.0f;
 	int alpha = 255;
@@ -674,12 +706,7 @@ HRESULT Stage_ObjShot::Render() {
 		Stage_ShotAnimation* dataDelay = pShotData_->GetDelayData();
 		if (dataDelay == nullptr) return D3DERR_INVALIDCALL;
 
-		{
-			Stage_ShotManager::ListRenderer* listRenderer = dataDelay->GetAttachedRenderer();
-			auto itrFind = listRenderer->find(blend_);
-			if (itrFind != listRenderer->end())
-				renderer = itrFind->second;
-		}
+		renderer = dataDelay->GetRendererFromBlendType(blend_);
 		if (renderer == nullptr) return D3DERR_INVALIDCALL;
 
 		Stage_ShotAnimation::Frame* animFrameDelay = dataDelay->GetFrame(0);
@@ -689,16 +716,11 @@ HRESULT Stage_ObjShot::Render() {
 		float avgShotSize = (pShotData_->GetWidth() + pShotData_->GetHeight()) / 2.0f;
 
 		float delayMul = frameDelay_ / (float)frameDelayMax_;
-		scale = Math::Lerp::Smooth(0.94f, 2.5f, delayMul) * (avgShotSize / 64.0f);
+		scale = Math::Lerp::Smooth(1.0f, 2.5f, delayMul) * (avgShotSize / 64.0f);
 		alpha = Math::Lerp::Linear(256 + 128, 0, delayMul);
 	}
 	else {
-		{
-			Stage_ShotManager::ListRenderer* listRenderer = pShotData_->GetAttachedRenderer();
-			auto itrFind = listRenderer->find(blend_);
-			if (itrFind != listRenderer->end())
-				renderer = itrFind->second;
-		}
+		renderer = pShotData_->GetRendererFromBlendType(blend_);
 		if (renderer == nullptr) return D3DERR_INVALIDCALL;
 
 		Stage_ShotAnimation::Frame* animFrame = pShotData_->GetFrame(frame_);
@@ -713,27 +735,12 @@ HRESULT Stage_ObjShot::Render() {
 
 	color_.w = ColorUtility::ClampRet(alpha) / 255.0f;
 	D3DCOLOR color = ColorUtility::VectorToD3DColor(color_);
-	//D3DCOLOR color = 0x44444444;
 
-	//FLOAT sposx = roundf(position_.x) - 0.5f;
-	//FLOAT sposy = roundf(position_.y) - 0.5f;
 	FLOAT sposx = position_.x - 0.5f;
 	FLOAT sposy = position_.y - 0.5f;
 
-	{
-		VertexTLX* pVertex = vertex_.data();
-		SetSourceRectNormalized(pVertex, rcSrc);
-		SetDestRect(pVertex, rcDst);
-		for (int i = 0; i < 4; ++i) {
-			float vx = pVertex[i].position.x * scale * scale_.x;
-			float vy = pVertex[i].position.y * scale * scale_.y;
-			pVertex[i].position.x = (vx * angleZ_.x - vy * angleZ_.y) + sposx;
-			pVertex[i].position.y = (vx * angleZ_.y + vy * angleZ_.x) + sposy;
-		}
-		SetColor(pVertex, color);
-
-		renderer->AddSquareVertex(pVertex);
-	}
+	_LoadVertices(rcSrc, rcDst, color, scale, D3DXVECTOR2(sposx, sposy));
+	renderer->AddSquareVertex(vertex_.data());
 
 	return S_OK;
 }
@@ -754,13 +761,13 @@ void Stage_ObjShot::Update() {
 	_CommonUpdate();
 }
 
-void Stage_ObjShot::SetSourceRectNormalized(VertexTLX* vert, DxRect<float>* rc) {
+void Stage_ObjShot::SetSourceRectNormalized(VertexTLX* vert, DxRectangle<float>* rc) {
 	vert[0].texcoord = D3DXVECTOR2(rc->left, rc->top);
 	vert[1].texcoord = D3DXVECTOR2(rc->right, rc->top);
 	vert[2].texcoord = D3DXVECTOR2(rc->left, rc->bottom);
 	vert[3].texcoord = D3DXVECTOR2(rc->right, rc->bottom);
 }
-void Stage_ObjShot::SetDestRect(VertexTLX* vert, DxRect<float>* rc) {
+void Stage_ObjShot::SetDestRect(VertexTLX* vert, DxRectangle<float>* rc) {
 	vert[0].position = D3DXVECTOR3(rc->left, rc->top, 1.0f);
 	vert[1].position = D3DXVECTOR3(rc->right, rc->top, 1.0f);
 	vert[2].position = D3DXVECTOR3(rc->left, rc->bottom, 1.0f);

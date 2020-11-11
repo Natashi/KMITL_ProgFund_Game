@@ -16,7 +16,7 @@ public:
 	Menu_SplashTask(Scene* parent);
 	~Menu_SplashTask();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 private:
 	size_t frameOff_;
@@ -47,7 +47,7 @@ public:
 	Menu_Child_ParentMenu(Menu_MainScene* parent);
 	~Menu_Child_ParentMenu();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 protected:
 	std::vector<Menu_Child_ParentMenu_Item*> listMenuObj_;
@@ -61,7 +61,7 @@ public:
 	Menu_Child_RankMenu(Menu_MainScene* parent);
 	~Menu_Child_RankMenu();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 protected:
 	std::vector<Menu_Child_RankMenu_Item*> listRankObj_;
@@ -76,7 +76,7 @@ public:
 	Menu_Child_OptionMenu(Menu_MainScene* parent);
 	~Menu_Child_OptionMenu();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 protected:
 	std::vector<Menu_Child_OptionMenu_Item_Sound*> listOptionObjSound_;

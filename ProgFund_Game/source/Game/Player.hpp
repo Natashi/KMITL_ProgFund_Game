@@ -6,6 +6,7 @@
 class Stage_MainScene;
 
 class Stage_PlayerHitboxTask;
+class Stage_PlayerOptionTask;
 class Stage_PlayerTask : public TaskBase {
 	static constexpr const double SPEED_FAST = 4;
 	static constexpr const double SPEED_SLOW = 1.5;
@@ -16,11 +17,11 @@ private:
 
 	bool bFocus_;
 
-	shared_ptr<Stage_PlayerHitboxTask> taskHitbox1_;
-	shared_ptr<Stage_PlayerHitboxTask> taskHitbox2_;
+	shared_ptr<Stage_PlayerHitboxTask> taskHitbox_[2];
+	shared_ptr<Stage_PlayerOptionTask> taskOption_[2];
 
 	D3DXVECTOR2 playerPos_;
-	DxRect<int> rcClip_;
+	DxRectangle<int> rcClip_;
 
 	double moveAngle_;
 	double moveSpeed_;
@@ -32,7 +33,7 @@ public:
 	Stage_PlayerTask(Scene* parent);
 	~Stage_PlayerTask();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 
 	float GetX() { return playerPos_.x; }
@@ -41,8 +42,11 @@ public:
 	void SetY(float y) { playerPos_.y = y; }
 	D3DXVECTOR2& GetPosition() { return playerPos_; }
 
-	void SetClip(const DxRect<int>& clip) { rcClip_ = clip; }
+	bool IsFocus() { return bFocus_; }
+
+	void SetClip(const DxRectangle<int>& clip) { rcClip_ = clip; }
 };
+
 class Stage_PlayerHitboxTask : public TaskBase {
 	friend class Stage_PlayerTask;
 private:
@@ -65,6 +69,28 @@ public:
 	Stage_PlayerHitboxTask(Scene* parent, int s_alpha, int e_alpha, double s_scale, 
 		size_t s_timer, double s_angle, double e_angle, double r_spin);
 
-	virtual void Render();
+	virtual void Render(byte layer);
+	virtual void Update();
+};
+
+class Stage_PlayerOptionTask : public TaskBase {
+	friend class Stage_PlayerTask;
+private:
+	Sprite2D objOption_;
+
+	size_t frameSub_;
+	bool bEnd_;
+
+	D3DXVECTOR2 position_;
+
+	D3DXVECTOR2 posUnFocus_;
+	D3DXVECTOR2 posFocus_;
+	double direction_;
+public:
+	Stage_PlayerOptionTask(Scene* parent, CD3DXVECTOR2 posUF, CD3DXVECTOR2 posF, double dir);
+
+	const D3DXVECTOR2& GetPosition() { return position_; }
+
+	virtual void Render(byte layer);
 	virtual void Update();
 };

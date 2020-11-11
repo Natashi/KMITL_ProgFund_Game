@@ -88,12 +88,12 @@ private:
 	std::list<std::pair<shared_ptr<TextureResource>, ListRenderer*>> listShotRendererSet_;
 	shared_ptr<ShaderResource> shaderLayer_;
 
-	DxRect<int> rcClip_;
+	DxRectangle<int> rcClip_;
 public:
 	Stage_ShotManager(Scene* parent);
 	~Stage_ShotManager();
 
-	virtual void Render();
+	virtual void Render(byte layer);
 	virtual void Update();
 
 	void LoadEnemyShotData();
@@ -103,15 +103,16 @@ public:
 
 	void AddEnemyShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity);
 	void AddPlayerShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity);
-	shared_ptr<Stage_ObjShot> CreateShotA1(CD3DXVECTOR2 pos, double speed, double angle, int graphic, size_t delay);
+	shared_ptr<Stage_ObjShot> CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos, 
+		double speed, double angle, int graphic, size_t delay);
 
 	void DeleteInCircle(ShotOwnerType typeOwner, int cx, int cy, int radius);
 
 	size_t GetEnemyShotCount() { return listShotEnemy_.size(); }
 	size_t GetPlayerShotCount() { return listShotPlayer_.size(); }
 
-	void SetClip(const DxRect<int>& clip) { rcClip_ = clip; }
-	const DxRect<int>* GetClip() { return &rcClip_; }
+	void SetClip(const DxRectangle<int>& clip) { rcClip_ = clip; }
+	const DxRectangle<int>* GetClip() { return &rcClip_; }
 };
 
 class Stage_ShotRenderer : public RenderObject {
@@ -145,8 +146,8 @@ class Stage_ShotAnimation {
 	friend class Stage_ShotManager;
 public:
 	struct Frame {
-		DxRect<float> rcSrc;
-		DxRect<float> rcDst;
+		DxRectangle<float> rcSrc;
+		DxRectangle<float> rcDst;
 		size_t frame;
 	};
 private:
@@ -180,6 +181,8 @@ public:
 	Stage_ShotAnimation* GetDelayData() { return pDelayData_; }
 	Stage_ShotManager::ListRenderer* GetAttachedRenderer() { return pAttachedRenderer_; }
 	shared_ptr<TextureResource> GetTexture() { return texture_; }
+
+	Stage_ShotRenderer* GetRendererFromBlendType(BlendMode blend);
 };
 
 class Stage_ObjShot : public RenderObject, public Stage_ObjMove {
@@ -208,6 +211,9 @@ protected:
 	virtual void _DeleteInAutoClip();
 	virtual void _DeleteInFade();
 	virtual void _CommonUpdate();
+
+	virtual void _LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>* rcDst, D3DCOLOR color, 
+		float scale, CD3DXVECTOR2 pos);
 public:
 	Stage_ObjShot(Stage_ShotManager* manager);
 	virtual ~Stage_ObjShot();
@@ -223,8 +229,8 @@ public:
 	virtual void SetTexture(shared_ptr<TextureResource> texture) { texture_ = texture; }
 	virtual void SetShader(shared_ptr<ShaderResource> shader) { shader_ = shader; }
 
-	void SetSourceRectNormalized(VertexTLX* vert, DxRect<float>* rc);
-	void SetDestRect(VertexTLX* vert, DxRect<float>* rc);
+	void SetSourceRectNormalized(VertexTLX* vert, DxRectangle<float>* rc);
+	void SetDestRect(VertexTLX* vert, DxRectangle<float>* rc);
 	void SetColor(VertexTLX* vert, D3DCOLOR color);
 
 	void SetAngleZOff(double z) { shotAngleZ_ = z; }

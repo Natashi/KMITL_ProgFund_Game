@@ -89,9 +89,11 @@ Scene::~Scene() {
 }
 void Scene::Render() {
 	if (!bEnableRender_) return;
-	for (shared_ptr<TaskBase>& iTask : listTask_) {
-		if (iTask && !iTask->IsFinished())
-			iTask->Render();
+	for (byte iLayer = 0; iLayer < MAX_RENDER_LAYER; ++iLayer) {
+		for (shared_ptr<TaskBase>& iTask : listTask_) {
+			if (iTask && !iTask->IsFinished())
+				iTask->Render(iLayer);
+		}
 	}
 }
 void Scene::Update() {

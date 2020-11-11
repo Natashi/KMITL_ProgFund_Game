@@ -50,7 +50,8 @@ CONSTRUCT_TASK(Menu_SplashTask) {
 }
 Menu_SplashTask::~Menu_SplashTask() {
 }
-void Menu_SplashTask::Render() {
+void Menu_SplashTask::Render(byte layer) {
+	if (layer != 0) return;
 	objSplash_.Render();
 }
 void Menu_SplashTask::Update() {
@@ -65,7 +66,7 @@ void Menu_SplashTask::Update() {
 	if (frame_ == 0) {
 		auto texture = resourceManager->GetResourceAs<TextureResource>("img/menu/splash_2.png");
 		objSplash_.SetTexture(texture);
-		objSplash_.SetSourceRect(DxRect(0, 0, 350, 256));
+		objSplash_.SetSourceRect(DxRectangle(0, 0, 350, 256));
 		objSplash_.SetDestCenter();
 		objSplash_.UpdateVertexBuffer();
 	}
@@ -120,13 +121,13 @@ public:
 		itemObj_.SetTexture(textureItem);
 		itemObjBack_.SetTexture(textureItem);
 		{
-			auto rect = DxRect<int>::SetFromIndex(256, 64, imgId, 2, 0, -4);
+			auto rect = DxRectangle<int>::SetFromIndex(256, 64, imgId, 2, 0, -4);
 			itemObj_.SetSourceRect(rect);
-			itemObj_.SetDestRect(DxRect(0, -32, 256, 32));
+			itemObj_.SetDestRect(DxRectangle(0, -32, 256, 32));
 
-			rect = DxRect<int>::SetFromIndex(256, 64, imgId + 1, 2, 0, -4);
+			rect = DxRectangle<int>::SetFromIndex(256, 64, imgId + 1, 2, 0, -4);
 			itemObjBack_.SetSourceRect(rect);
-			itemObjBack_.SetDestRect(DxRect(0, -32, 256, 32));
+			itemObjBack_.SetDestRect(DxRectangle(0, -32, 256, 32));
 
 			itemObj_.UpdateVertexBuffer();
 			itemObjBack_.UpdateVertexBuffer();
@@ -195,7 +196,8 @@ Menu_Child_ParentMenu::~Menu_Child_ParentMenu() {
 		ptr_delete(ptr);
 }
 
-void Menu_Child_ParentMenu::Render() {
+void Menu_Child_ParentMenu::Render(byte layer) {
+	if (layer != 0) return;
 	for (auto& ptr : listMenuObj_)
 		ptr->Render();
 }
@@ -256,7 +258,7 @@ public:
 
 		itemObj_.SetTexture(textureItem);
 		{
-			auto rect = DxRect<int>::SetFromIndex(256, 128, imgId, 2);
+			auto rect = DxRectangle<int>::SetFromIndex(256, 128, imgId, 2);
 			itemObj_.SetSourceRect(rect);
 			itemObj_.SetDestCenter();
 
@@ -319,7 +321,8 @@ Menu_Child_RankMenu::~Menu_Child_RankMenu() {
 		ptr_delete(ptr);
 }
 
-void Menu_Child_RankMenu::Render() {
+void Menu_Child_RankMenu::Render(byte layer) {
+	if (layer != 0) return;
 	for (auto& ptr : listRankObj_)
 		ptr->Render();
 }
@@ -401,8 +404,8 @@ Menu_MainScene::Menu_MainScene(SceneManager* manager) : Scene(manager) {
 
 		objBackground_.SetTexture(textureBackground);
 
-		objBackground_.SetSourceRect(DxRect(0, 0, 640, 480));
-		objBackground_.SetDestRect(DxRect(0, 0, 640, 480));
+		objBackground_.SetSourceRect(DxRectangle(0, 0, 640, 480));
+		objBackground_.SetDestRect(DxRectangle(0, 0, 640, 480));
 		objBackground_.UpdateVertexBuffer();
 
 		objBackground_.SetScale(1.5, 1.5, 1);

@@ -8,7 +8,7 @@ public:
 	TaskBase(Scene* parent);
 	virtual ~TaskBase();
 
-	virtual void Render() {};
+	virtual void Render(byte layer) {};
 	virtual void Update() {};
 
 	Scene* GetParent() { return parent_; }
@@ -38,6 +38,8 @@ public:
 		Pause,
 		Unknown,
 	} Type;
+
+	static constexpr const size_t MAX_RENDER_LAYER = 16;
 public:
 	Scene(SceneManager* manager);
 	virtual ~Scene();
