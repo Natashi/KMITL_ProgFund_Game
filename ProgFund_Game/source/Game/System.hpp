@@ -8,10 +8,17 @@ static constexpr byte LAYER_OPTION = 3;
 
 static constexpr byte LAYER_SHOT = 7;
 
+static constexpr byte LAYER_EX_UI = 13;
+
 class SystemUtility {
 private:
 	SystemUtility() {};	//Static class
 public:
+	static int RandDirection() {
+		GET_INSTANCE(RandProvider, rand);
+		return (rand->GetInt() & 1) * 2 - 1;
+	}
+
 	static DxRectangle<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {
 		int rect_i[] = { 0, 32 };
 

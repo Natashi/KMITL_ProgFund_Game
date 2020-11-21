@@ -4,46 +4,51 @@
 #include "GConstant.hpp"
 
 #include "ObjMove.hpp"
+#include "Intersection.hpp"
 
 #define DEF_SHOTCONST_SET(s, i) \
-	Red##s = i + 0, Purple##s = i + 1, Blue##s = i + 2, Cyan##s = i + 3, \
-	Green##s = i + 4, Yellow##s = i + 5, Orange##s = i + 6, White##s = i + 7,
+	Red##s = (i) + 0, Purple##s = (i) + 1, Blue##s = (i) + 2, Cyan##s = (i) + 3, \
+	Green##s = (i) + 4, Yellow##s = (i) + 5, Orange##s = (i) + 6, White##s = (i) + 7,
+#define DEF_SHOTCONST_SET_I8(s, i) DEF_SHOTCONST_SET(s, i * 8)
 
 enum ShotConst : int {
+	DEF_SHOTCONST_SET_I8(, 0)
+
 	DEF_SHOTCONST_SET(Delay, 1000)
 
-	DEF_SHOTCONST_SET(BallS, 0)
-	DEF_SHOTCONST_SET(DarkBallS, 10)
+	DEF_SHOTCONST_SET_I8(BallS, 0)
+	DEF_SHOTCONST_SET_I8(DarkBallS, 1)
 
-	DEF_SHOTCONST_SET(BallM, 20)
-	DEF_SHOTCONST_SET(RingBallM, 30)
-	DEF_SHOTCONST_SET(RiceS, 40)
-	DEF_SHOTCONST_SET(DarkRiceS, 50)
-	DEF_SHOTCONST_SET(Scale, 60)
-	DEF_SHOTCONST_SET(Kunai, 70)
-	DEF_SHOTCONST_SET(GemS, 80)
-	DEF_SHOTCONST_SET(Bullet, 90)
-	DEF_SHOTCONST_SET(Amulet, 100)
-	DEF_SHOTCONST_SET(Drop, 110)
-	DEF_SHOTCONST_SET(StarS, 120)
-	DEF_SHOTCONST_SET(Coin, 130)
+	DEF_SHOTCONST_SET_I8(BallM, 2)
+	DEF_SHOTCONST_SET_I8(RingBallM, 3)
+	DEF_SHOTCONST_SET_I8(RiceS, 4)
+	DEF_SHOTCONST_SET_I8(DarkRiceS, 5)
+	DEF_SHOTCONST_SET_I8(Scale, 6)
+	DEF_SHOTCONST_SET_I8(Kunai, 7)
+	DEF_SHOTCONST_SET_I8(GemS, 8)
+	DEF_SHOTCONST_SET_I8(Bullet, 9)
+	DEF_SHOTCONST_SET_I8(Amulet, 10)
+	DEF_SHOTCONST_SET_I8(Drop, 11)
+	DEF_SHOTCONST_SET_I8(StarS, 12)
+	DEF_SHOTCONST_SET_I8(Coin, 13)
 
-	DEF_SHOTCONST_SET(BallL, 140)
-	DEF_SHOTCONST_SET(RiceL, 150)
-	DEF_SHOTCONST_SET(Butterfly, 160)
-	DEF_SHOTCONST_SET(Knife, 170)
-	DEF_SHOTCONST_SET(Heart, 180)
-	DEF_SHOTCONST_SET(Arrow, 190)
-	DEF_SHOTCONST_SET(StarL, 200)
+	DEF_SHOTCONST_SET_I8(BallL, 14)
+	DEF_SHOTCONST_SET_I8(RingBallL, 15)
+	DEF_SHOTCONST_SET_I8(RiceL, 16)
+	DEF_SHOTCONST_SET_I8(Butterfly, 17)
+	DEF_SHOTCONST_SET_I8(Knife, 18)
+	DEF_SHOTCONST_SET_I8(Heart, 19)
+	DEF_SHOTCONST_SET_I8(Arrow, 20)
+	DEF_SHOTCONST_SET_I8(StarL, 21)
 
-	DEF_SHOTCONST_SET(Bubble, 210)
-	DEF_SHOTCONST_SET(MikoOrb, 220)
+	DEF_SHOTCONST_SET_I8(Bubble, 22)
+	DEF_SHOTCONST_SET_I8(MikoOrb, 23)
 
-	DEF_SHOTCONST_SET(Fire, 230)
-	DEF_SHOTCONST_SET(Note, 240)
+	DEF_SHOTCONST_SET_I8(Fire, 24)
+	DEF_SHOTCONST_SET_I8(Note, 25)
 
-	DEF_SHOTCONST_SET(StLaser, 250)
-	DEF_SHOTCONST_SET(CrLaser, 260)
+	DEF_SHOTCONST_SET_I8(StLaser, 26)
+	DEF_SHOTCONST_SET_I8(CrLaser, 27)
 };
 
 enum ShotPlayerConst : int {
@@ -55,11 +60,6 @@ enum ShotPlayerConst : int {
 	NeedleB,
 };
 
-enum class ShotPolarity : byte {
-	None,
-	White,
-	Black,
-};
 enum class ShotOwnerType : byte {
 	None,
 	Player,
@@ -101,9 +101,9 @@ public:
 	Stage_ShotAnimation* GetEnemyShotData(int id);
 	Stage_ShotAnimation* GetPlayerShotData(int id);
 
-	void AddEnemyShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity);
-	void AddPlayerShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity);
-	shared_ptr<Stage_ObjShot> CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos, 
+	void AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
+	void AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
+	shared_ptr<Stage_ObjShot> CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos,
 		double speed, double angle, int graphic, size_t delay);
 
 	void DeleteInCircle(ShotOwnerType typeOwner, int cx, int cy, int radius);
@@ -160,6 +160,8 @@ private:
 
 	std::vector<Frame> listFrameData_;
 	size_t maxFrame_;
+
+	DxCircle<float> hitCircle_;
 public:
 	double spin_;
 	bool bFixedAngle_;
@@ -183,14 +185,22 @@ public:
 	shared_ptr<TextureResource> GetTexture() { return texture_; }
 
 	Stage_ShotRenderer* GetRendererFromBlendType(BlendMode blend);
+
+	DxCircle<float>* GetHitboxCircle() { return &hitCircle_; }
 };
 
-class Stage_ObjShot : public RenderObject, public Stage_ObjMove {
+class Stage_ObjShot : public RenderObject, public Stage_ObjMove, public Stage_ObjCollision {
 	friend class Stage_ShotManager;
+public:
+	enum {
+		FADE_MAX = 12,
+	};
 protected:
 	Stage_ShotManager* shotManager_;
 public:
-	ShotPolarity polarity_;
+	weak_ptr<Stage_ObjShot> pOwnRefWeak_;
+
+	IntersectPolarity polarity_;
 	ShotOwnerType typeOwner_;
 
 	bool bDelete_;
@@ -199,18 +209,22 @@ public:
 	size_t frameDelay_;
 	size_t frameDelayMax_;
 	size_t frameClipImmune_;	//The shot will not be auto-deleted when going off the screen if this is > 0
-	size_t frameFadeDelete_;	//The shot will be deleted once this reaches 0
+	int frameFadeDelete_;		//The shot will be deleted once this reaches 0
 
 	Stage_ShotAnimation* pShotData_;
 	double shotAngleZ_;
 
 	double life_;
 	double damage_;
+
+	shared_ptr<Stage_IntersectionTarget> pIntersectionTarget_;
 protected:
 	virtual void _DeleteInLife();
 	virtual void _DeleteInAutoClip();
 	virtual void _DeleteInFade();
 	virtual void _CommonUpdate();
+
+	virtual void _RegistIntersection();
 
 	virtual void _LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>* rcDst, D3DCOLOR color, 
 		float scale, CD3DXVECTOR2 pos);
@@ -222,6 +236,11 @@ public:
 	virtual void Update();
 
 	size_t GetFrame() { return frame_; }
+
+	IntersectPolarity GetPolarity() { return polarity_; }
+	ShotOwnerType GetOwnerType() { return typeOwner_; }
+
+	bool IsDelete() { return bDelete_; }
 
 	void SetShotData(int id);
 	void SetShotData(Stage_ShotAnimation* id);
@@ -236,5 +255,5 @@ public:
 	void SetAngleZOff(double z) { shotAngleZ_ = z; }
 
 	//bool CanIntersect() { return bIntersectionEnable_; }
-	//virtual void Intersect(shared_ptr<Stage_ObjIntersect> ownRef, shared_ptr<Stage_ObjIntersect> otherRef);
+	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget);
 };

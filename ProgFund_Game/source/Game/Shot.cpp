@@ -70,10 +70,12 @@ void Stage_ShotManager::LoadEnemyShotData() {
 		}
 	}
 
+	constexpr const int S_STEP = 8;
+
 	//Small shots
 	{
 		int iShotIni = ShotConst::RedBallS;
-		for (int i = 0; i < (ShotConst::RedDarkBallS - ShotConst::RedBallS) / 10 + 1; ++i) {
+		for (int i = 0; i < (ShotConst::RedDarkBallS - ShotConst::RedBallS) / S_STEP + 1; ++i) {
 			int yOff = 0 + i * 8;
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 0, true);
@@ -86,7 +88,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				};
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
@@ -108,7 +110,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 
 		int iShotIni = ShotConst::RedBallM;
 		int iType = 0;
-		for (int i = 0; i < (ShotConst::RedCoin - ShotConst::RedBallM) / 10 + 1; ++i, ++iType) {
+		for (int i = 0; i < (ShotConst::RedCoin - ShotConst::RedBallM) / S_STEP + 1; ++i, ++iType) {
 			int yOff = 16 + i * 16;
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 
@@ -122,7 +124,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				};
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
@@ -130,20 +132,20 @@ void Stage_ShotManager::LoadEnemyShotData() {
 	//Large shots
 	{
 		double listSpin[] = {
-			0,
+			0, 0,
 			0, 0, 0,
 			0, 0, 6,
 		};
 		bool listFixedAngle[] = {
-			true,
+			true, true,
 			false, false, false,
 			false, false, false,
 		};
 
 		int iShotIni = ShotConst::RedBallL;
 		int iType = 0;
-		for (int i = 0; i < (ShotConst::RedStarL - ShotConst::RedBallL) / 10 + 1; ++i, ++iType) {
-			int yOff = 208 + i * 32;
+		for (int i = 0; i < (ShotConst::RedStarL - ShotConst::RedBallL) / S_STEP + 1; ++i, ++iType) {
+			int yOff = i * 32;
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 
 					listSpin[iType], listFixedAngle[iType]);
@@ -151,12 +153,12 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
+					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 128, yOff),
 					DxRectangle<float>(-16, -16, 16, 16), 1
 				};
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
@@ -164,8 +166,8 @@ void Stage_ShotManager::LoadEnemyShotData() {
 	//Very large shots
 	{
 		int iShotIni = ShotConst::RedBubble;
-		for (int i = 0; i < (ShotConst::RedMikoOrb - ShotConst::RedBubble) / 10 + 1; ++i) {
-			int yOff = 432 + i * 64;
+		for (int i = 0; i < (ShotConst::RedMikoOrb - ShotConst::RedBubble) / S_STEP + 1; ++i) {
+			int yOff = 256 + i * 64;
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy);
 				anime->pDelayData_ = listDelayData[c];
@@ -177,7 +179,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				};
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
@@ -187,19 +189,22 @@ void Stage_ShotManager::LoadEnemyShotData() {
 		bool listFixedAngle[] = {
 			false, true,
 		};
+		size_t listFrameDuration[] = {
+			4, 9,
+		};
 
 		int iShotIni = ShotConst::RedFire;
 		int iType = 0;
-		for (int i = 0; i < (ShotConst::RedNote - ShotConst::RedFire) / 10 + 1; ++i, ++iType) {
-			int yOff = 560 + i * (32 * 3);
+		for (int i = 0; i < (ShotConst::RedNote - ShotConst::RedFire) / S_STEP + 1; ++i, ++iType) {
+			int xOff = 0 + i * (32 * 8);
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 0, listFixedAngle[iType]);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 0, yOff),
-					DxRectangle<float>(-16, -16, 16, 16), 4
+					DxRectangle<float>::SetFromIndex(32, 32, c, 8, xOff, 384),
+					DxRectangle<float>(-16, -16, 16, 16), listFrameDuration[iType]
 				};
 				anime->AddFrame(frame);
 				frame.rcSrc += DxRectangle<float>(0, 32, 0, 32);
@@ -209,7 +214,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				frame.rcSrc -= DxRectangle<float>(0, 32, 0, 32);
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
@@ -217,36 +222,44 @@ void Stage_ShotManager::LoadEnemyShotData() {
 	//Lasers
 	{
 		int iShotIni = ShotConst::RedStLaser;
-		for (int i = 0; i < (ShotConst::RedCrLaser - ShotConst::RedStLaser) / 10 + 1; ++i) {
-			int yOff = 944 + i * 32;
+		for (int i = 0; i < (ShotConst::RedCrLaser - ShotConst::RedStLaser) / S_STEP + 1; ++i) {
+			int yOff = 0 + i * 32;
 			for (int c = 0; c < 8; ++c) {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
 
 				Stage_ShotAnimation::Frame frame = {
-					DxRectangle<float>::SetFromIndex(16, 32, c, 8, 0, yOff),
+					DxRectangle<float>::SetFromIndex(16, 32, c, 8, 384, yOff),
 					DxRectangle<float>(-8, -16, 8, 16), 1
 				};
 				anime->AddFrame(frame);
 
-				mapShotDataEnemy_[iShotIni + i * 10 + c] = anime;
+				mapShotDataEnemy_[iShotIni + i * S_STEP + c] = anime;
 			}
 		}
 	}
 
-	//Normalize rects
+	//Normalize rects and set intersection size
 	for (auto itr = mapShotDataEnemy_.begin(); itr != mapShotDataEnemy_.end(); ++itr) {
-		auto& texture = itr->second->texture_;
-		auto& listFrame = itr->second->listFrameData_;
+		Stage_ShotAnimation* pShotData = itr->second;
+
+		auto& texture = pShotData->texture_;
+		auto& listFrame = pShotData->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
 			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
 			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
 			if (iFrame == 0) {
-				itr->second->width_ = listFrame[iFrame].rcDst.GetWidth();
-				itr->second->height_ = listFrame[iFrame].rcDst.GetHeight();
+				pShotData->width_ = listFrame[iFrame].rcDst.GetWidth();
+				pShotData->height_ = listFrame[iFrame].rcDst.GetHeight();
 			}
 			//iFrame.rcDst -= 0.5f;	//Bias
+		}
+
+		if (pShotData->hitCircle_.r < 0) {
+			float rAvg = (pShotData->width_ + pShotData->height_) / 2.0f;
+			if (rAvg > 0)
+				pShotData->hitCircle_.r = std::max(rAvg / 3.0f, 2.0f) * 0.5f;
 		}
 	}
 }
@@ -354,18 +367,26 @@ void Stage_ShotManager::LoadPlayerShotData() {
 		mapShotDataPlayer_[ShotPlayerConst::NeedleB] = anime;
 	}
 
-	//Normalize rects
+	//Normalize rects and set intersection size
 	for (auto itr = mapShotDataPlayer_.begin(); itr != mapShotDataPlayer_.end(); ++itr) {
-		auto& texture = itr->second->texture_;
-		auto& listFrame = itr->second->listFrameData_;
+		Stage_ShotAnimation* pShotData = itr->second;
+
+		auto& texture = pShotData->texture_;
+		auto& listFrame = pShotData->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
 			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
 			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
 			if (iFrame == 0) {
-				itr->second->width_ = listFrame[iFrame].rcDst.GetWidth();
-				itr->second->height_ = listFrame[iFrame].rcDst.GetHeight();
+				pShotData->width_ = listFrame[iFrame].rcDst.GetWidth();
+				pShotData->height_ = listFrame[iFrame].rcDst.GetHeight();
 			}
 			//iFrame.rcDst -= 0.5f;	//Bias
+		}
+
+		if (pShotData->hitCircle_.r < 0) {
+			float rAvg = (pShotData->width_ + pShotData->height_) / 2.0f;
+			if (rAvg > 0)
+				pShotData->hitCircle_.r = std::max(rAvg / 3.0f, 2.0f);
 		}
 	}
 }
@@ -383,12 +404,12 @@ Stage_ShotAnimation* Stage_ShotManager::GetPlayerShotData(int id) {
 	return itr->second;
 }
 
-void Stage_ShotManager::AddEnemyShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity) {
+void Stage_ShotManager::AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
 	obj->typeOwner_ = ShotOwnerType::Enemy;
 	obj->polarity_ = polarity;
 	listShotEnemy_.push_back(obj);
 }
-void Stage_ShotManager::AddPlayerShot(shared_ptr<Stage_ObjShot> obj, ShotPolarity polarity) {
+void Stage_ShotManager::AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
 	obj->typeOwner_ = ShotOwnerType::Player;
 	obj->polarity_ = polarity;
 	listShotPlayer_.push_back(obj);
@@ -397,6 +418,7 @@ shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(ShotOwnerType typeOwne
 	double speed, double angle, int graphic, size_t delay) 
 {
 	shared_ptr<Stage_ObjShot> nShot = shared_ptr<Stage_ObjShot>(new Stage_ObjShot(this));
+	nShot->pOwnRefWeak_ = weak_ptr(nShot);
 	nShot->typeOwner_ = typeOwner;
 	nShot->Stage_ObjMove::SetX(pos.x);
 	nShot->Stage_ObjMove::SetY(pos.y);
@@ -468,6 +490,7 @@ void Stage_ShotManager::Update() {
 		auto& iShot = *itr;
 		if (iShot->bDelete_) itr = listShotPlayer_.erase(itr);
 		else {
+			(*itr)->ClearIntersected();
 			(*itr)->Update();
 			++itr;
 		}
@@ -476,6 +499,7 @@ void Stage_ShotManager::Update() {
 		auto& iShot = *itr;
 		if (iShot->bDelete_) itr = listShotEnemy_.erase(itr);
 		else {
+			(*itr)->ClearIntersected();
 			(*itr)->Update();
 			++itr;
 		}
@@ -552,14 +576,22 @@ void Stage_ShotRenderer::AddSquareVertex(VertexTLX* listVertex) {
 	bool bNextAvailVertex = _TryExpandVertex(countRenderVertex_ + 4U);
 	bool bNextAvailIndex = _TryExpandIndex(countRenderIndex_ + 6U);
 
+	/*
+	* Vertex arrangement:
+	*     0------1
+	*     |      |
+	*     |      |
+	*     2------3
+	*/
+
 	if (bNextAvailVertex && bNextAvailIndex) {
 		memcpy(&vertex_[countRenderVertex_], listVertex, sizeof(VertexTLX) * 4U);
 
 		index_[countRenderIndex_ + 0] = countRenderVertex_ + 0;
 		index_[countRenderIndex_ + 1] = countRenderVertex_ + 1;
 		index_[countRenderIndex_ + 2] = countRenderVertex_ + 2;
-		index_[countRenderIndex_ + 3] = countRenderVertex_ + 1;
-		index_[countRenderIndex_ + 4] = countRenderVertex_ + 2;
+		index_[countRenderIndex_ + 3] = countRenderVertex_ + 2;
+		index_[countRenderIndex_ + 4] = countRenderVertex_ + 1;
 		index_[countRenderIndex_ + 5] = countRenderVertex_ + 3;
 
 		countRenderVertex_ += 4U;
@@ -579,6 +611,8 @@ Stage_ShotAnimation::Stage_ShotAnimation(shared_ptr<TextureResource> texture, do
 
 	spin_ = Math::DegreeToRadian(spin);
 	bFixedAngle_ = fixedAngle;
+
+	hitCircle_ = DxCircle<float>(0, 0, -1);
 }
 
 Stage_ShotAnimation::Frame* Stage_ShotAnimation::GetFrame(size_t frame) {
@@ -611,7 +645,7 @@ Stage_ObjShot::Stage_ObjShot(Stage_ShotManager* manager) {
 
 	SetRenderPriority(LAYER_SHOT);
 
-	polarity_ = ShotPolarity::White;
+	polarity_ = IntersectPolarity::White;
 	typeOwner_ = ShotOwnerType::Enemy;
 
 	bDelete_ = false;
@@ -619,7 +653,7 @@ Stage_ObjShot::Stage_ObjShot(Stage_ShotManager* manager) {
 	frame_ = 0;
 	frameDelay_ = 0;
 	frameClipImmune_ = 0;
-	frameFadeDelete_ = UINT_MAX;
+	frameFadeDelete_ = -1;
 
 	pShotData_ = nullptr;
 	shotAngleZ_ = 0;
@@ -729,12 +763,40 @@ HRESULT Stage_ObjShot::Render() {
 		rcSrc = &animFrame->rcSrc;
 		rcDst = &animFrame->rcDst;
 
-		scale = 1.0f;
-		alpha = 255;
+		if (frameFadeDelete_ >= 0) {
+			float fadeMul = frameFadeDelete_ / (float)FADE_MAX;
+			scale = Math::Lerp::Smooth(2.3f, 1.0f, fadeMul);
+			alpha = Math::Lerp::Linear(0, 255, fadeMul);
+		}
+		else {
+			scale = 1.0f;
+			alpha = 255;
+		}
 	}
 
-	color_.w = ColorUtility::ClampRet(alpha) / 255.0f;
-	D3DCOLOR color = ColorUtility::VectorToD3DColor(color_);
+	D3DXVECTOR4 colorCopy = color_;
+	/*
+	switch (blend_) {
+	case BlendMode::Subtract:
+	case BlendMode::RevSubtract:
+	case BlendMode::Invert:
+	{
+		float rate = ColorUtility::ClampRet(alpha) / 255.0f;;
+		colorCopy.x *= rate;
+		colorCopy.y *= rate;
+		colorCopy.z *= rate;
+		break;
+	}
+	default:
+		colorCopy.w *= ColorUtility::ClampRet(alpha) / 255.0f;
+		break;
+	}
+	*/
+	colorCopy.w *= ColorUtility::ClampRet(alpha) / 255.0f;
+
+	D3DCOLOR color = ColorUtility::VectorToD3DColor(colorCopy);
+	//if (IsIntersected())
+	//	color = (D3DCOLOR_XRGB(255, 16, 64) & 0x00ffffff) | (color & 0xff000000);
 
 	FLOAT sposx = position_.x - 0.5f;
 	FLOAT sposy = position_.y - 0.5f;
@@ -745,19 +807,25 @@ HRESULT Stage_ObjShot::Render() {
 	return S_OK;
 }
 void Stage_ObjShot::Update() {
-	_Move();
-	RenderObject::SetPosition(posX_, posY_, 1.0f);
+	ClearIntersected();
+	ClearIntersectedList();
 
-	if (frameDelay_ > 0) --frameDelay_;
-	{
-		double angleZ = shotAngleZ_;
-		if (pShotData_ && !pShotData_->bFixedAngle_) {
-			angleZ += GetDirectionAngle() + Math::DegreeToRadian(90);
-			shotAngleZ_ += pShotData_->spin_;
+	if (frameFadeDelete_ < 0) {
+		_Move();
+		RenderObject::SetPosition(posX_, posY_, 1.0f);
+
+		if (frameDelay_ > 0) --frameDelay_;
+		{
+			double angleZ = shotAngleZ_;
+			if (pShotData_ && !pShotData_->bFixedAngle_) {
+				angleZ += GetDirectionAngle() + Math::DegreeToRadian(90);
+				shotAngleZ_ += pShotData_->spin_;
+			}
+			SetAngleZ(angleZ);
 		}
-		SetAngleZ(angleZ);
-	}
 
+		_RegistIntersection();
+	}
 	_CommonUpdate();
 }
 
@@ -778,4 +846,55 @@ void Stage_ObjShot::SetColor(VertexTLX* vert, D3DCOLOR color) {
 	vert[1].diffuse = color;
 	vert[2].diffuse = color;
 	vert[3].diffuse = color;
+}
+
+void Stage_ObjShot::_RegistIntersection() {
+	if (bDelete_ || frameDelay_ > 0 || frameFadeDelete_ >= 0) return;
+	if (pShotData_ == nullptr) return;
+
+	DxCircle<float>* pBaseCircle = pShotData_->GetHitboxCircle();
+	if (pBaseCircle->r > 0) {
+		if (pIntersectionTarget_ == nullptr) {
+			pIntersectionTarget_ = shared_ptr<Stage_IntersectionTarget_Circle>(new Stage_IntersectionTarget_Circle());
+			pIntersectionTarget_->SetTargetType(typeOwner_ == ShotOwnerType::Player?
+				Stage_IntersectionTarget::TypeTarget::PlayerShot : Stage_IntersectionTarget::TypeTarget::EnemyShot);
+			pIntersectionTarget_->SetParent(pOwnRefWeak_);
+		}
+
+		Stage_IntersectionTarget_Circle* pTargetCircle = (Stage_IntersectionTarget_Circle*)pIntersectionTarget_.get();
+
+		auto& targetCircle = pTargetCircle->GetCircle();
+		targetCircle.x = posX_ + pBaseCircle->x;
+		targetCircle.y = posY_ + pBaseCircle->y;
+		targetCircle.r = pBaseCircle->r;
+		pTargetCircle->SetIntersectionSpace();
+
+		auto intersectionManager = ((Stage_MainScene*)shotManager_->GetParent())->GetIntersectionManager();
+		intersectionManager->AddTarget(pIntersectionTarget_);
+	}
+}
+
+void Stage_ObjShot::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget) {
+	shared_ptr<Stage_ObjCollision> pOther = otherTarget->GetParent().lock();
+
+	switch (otherTarget->GetTargetType()) {
+	case Stage_IntersectionTarget::TypeTarget::Player:
+		if (auto pTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(otherTarget.get())) {
+			auto objPlayer = dynamic_cast<Stage_PlayerTask*>(pTarget->GetParent().lock().get());
+			if (pTarget->IsGraze()) {
+				if (polarity_ == objPlayer->GetPolarity())
+					frameFadeDelete_ = FADE_MAX;
+			}
+			else {
+				if (polarity_ != objPlayer->GetPolarity())
+					life_ = 0;
+			}
+		}
+		break;
+	case Stage_IntersectionTarget::TypeTarget::PlayerSpell:
+		break;
+	case Stage_IntersectionTarget::TypeTarget::Enemy:
+		life_ -= 1;
+		break;
+	}
 }

@@ -36,9 +36,14 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 			"resource/img/player/eff_dead.png", "img/player/eff_dead.png");
 		resourceManager->LoadResource<TextureResource>(
 			"resource/img/player/eff_sloweffect.png", "img/player/eff_sloweffect.png");
+
 		resourceManager->LoadResource<TextureResource>(
 			"resource/img/player/pl00.png", "img/player/pl00.png");
 
+		resourceManager->LoadResource<TextureResource>(
+			"resource/img/player/eff_ring.png", "img/player/eff_ring.png");
+		resourceManager->LoadResource<TextureResource>(
+			"resource/img/player/eff_burst.png", "img/player/eff_burst.png");
 	}
 }
 Stage_SceneLoader::~Stage_SceneLoader() {
@@ -68,7 +73,7 @@ Stage_MainSceneUI::Stage_MainSceneUI(SceneManager* manager) : Scene(manager) {
 	{
 		auto textureFrame = resourceManager->GetResourceAs<TextureResource>("img/stage/stg_frame.png");
 		objFrame_.SetTexture(textureFrame);
-		objFrame_.SetSourceRect(DxRectangle(0, 0, 640, 480));
+		objFrame_.SetSourceRect(DxRectangle(0, 0, 640, 480) - 1);
 		objFrame_.SetDestRect(DxRectangle(0, 0, 640, 480));
 		objFrame_.UpdateVertexBuffer();
 	}
@@ -106,15 +111,39 @@ public:
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
 
-		if (frame_ > 120 && frame_ % 3 == 0) {
-			for (int i = 0; i < 8; ++i) {
-				shotManager->AddEnemyShot(shotManager->CreateShotA1(ShotOwnerType::Enemy,
-					D3DXVECTOR2(320, 128), 2, angleA + GM_PI_X2 * (i / 8.0f), ShotConst::CyanRiceS, 20),
-					ShotPolarity::White);
+		
+		if (frame_ > 120 && frame_ % 2 == 0) {
+			static size_t t = 0;
+			
+			for (size_t i = 0; i < 8; ++i) {
+				bool bPolarityBlack = (t + i) % 10 >= 5;
+				auto shot = shotManager->CreateShotA1(ShotOwnerType::Enemy,
+					D3DXVECTOR2(320, 128), 2.6, angleA + GM_PI_X2 / 8 * i,
+					bPolarityBlack ? ShotConst::RedScale : ShotConst::WhiteScale, 20);
+				shotManager->AddEnemyShot(shot,
+					bPolarityBlack ? IntersectPolarity::Black : IntersectPolarity::White);
 			}
+
 			angleB += angleC;
 			angleA += angleB;
+			++t;
 		}
+		
+		/*
+		if (frame_ > 120 && frame_ % 4 == 0) {
+			static int c_gr = ShotConst::RedBallS;
+			static double c_an = 0;
+
+			for (int i = 0; i < 8; ++i) {
+				shotManager->AddEnemyShot(shotManager->CreateShotA1(ShotOwnerType::Enemy,
+					D3DXVECTOR2(320, 128), 2, GM_DTORA(360 / 16 + 360 / 8 * i + c_an), c_gr, 20),
+					IntersectPolarity::White);
+			}
+
+			c_gr = (c_gr + 1) % (ShotConst::WhiteCrLaser + 1);
+			c_an += 4.63;
+		}
+		*/
 
 		++frame_;
 	}
@@ -127,6 +156,7 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 
 	{
 		pTaskPlayer_ = std::make_shared<Stage_PlayerTask>(this);
+		pTaskPlayer_->pOwnRefWeak_ = weak_ptr(pTaskPlayer_);
 		
 		DxRectangle<int> rcMargin(12, 36, -12, -16);
 		pTaskPlayer_->SetClip(rcStgFrame_ + rcMargin);
@@ -146,6 +176,11 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 		pTaskShotManager_->LoadPlayerShotData();
 
 		this->AddTask(pTaskShotManager_);
+	}
+	{
+		pTaskIntersectionManager_ = std::make_shared<Stage_IntersectionManager>(this);
+
+		this->AddTask(pTaskIntersectionManager_);
 	}
 
 	{

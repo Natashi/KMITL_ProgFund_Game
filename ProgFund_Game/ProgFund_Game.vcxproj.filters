@@ -69,6 +69,9 @@
     <ClCompile Include="source\Engine\Rand.cpp">
       <Filter>Header Files\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="source\Game\Intersection.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -133,6 +136,9 @@
     </ClInclude>
     <ClInclude Include="source\Engine\Shape.hpp">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Game\Intersection.hpp">
+      <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
