@@ -92,6 +92,8 @@ class Math {
 public:
 	static inline constexpr double DegreeToRadian(double angle) { return angle * GM_PI / 180.0; }
 	static inline constexpr double RadianToDegree(double angle) { return angle * 180.0 / GM_PI; }
+#define GM_DTORA(a) Math::DegreeToRadian(a)
+#define GM_RTODA(a) Math::RadianToDegree(a)
 
 	static inline double NormalizeAngleDeg(double angle) {
 		angle = fmod(angle, 360.0);
@@ -203,3 +205,27 @@ public:
 		return res;
 	}
 };
+
+//*******************************************************************
+//Threadutilities
+//*******************************************************************
+template<class F>
+static void ParallelTask(size_t countLoop, F&& func) {
+	static const size_t countCore = std::max(std::thread::hardware_concurrency(), 1U);
+
+	std::vector<std::future<void>> workers;
+	workers.reserve(countCore);
+
+	auto coreTask = [&](size_t id) {
+		const size_t begin = countLoop / countCore * id + std::min(countLoop % countCore, id);
+		const size_t end = countLoop / countCore * (id + 1U) + std::min(countLoop % countCore, id + 1U);
+
+		for (size_t i = begin; i < end; ++i)
+			func(i);
+	};
+
+	for (size_t iCore = 0; iCore < countCore; ++iCore)
+		workers.emplace_back(std::async(std::launch::async | std::launch::deferred, coreTask, iCore));
+	for (const auto& worker : workers)
+		worker.wait();
+}
