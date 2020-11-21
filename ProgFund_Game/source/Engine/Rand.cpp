@@ -59,7 +59,7 @@ uint64_t RandProvider::_GenrandInt64() {
 }
 
 int64_t RandProvider::GetInt() {
-	return (int64_t)GetReal();
+	return _GenrandInt64() >> 1;
 }
 int64_t RandProvider::GetInt(int64_t min, int64_t max) {
 	return (int64_t)GetReal(min, max);
