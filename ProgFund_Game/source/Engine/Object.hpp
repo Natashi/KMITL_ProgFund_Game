@@ -127,7 +127,8 @@ public:
 	virtual VertexTLX* GetVertex(size_t index);
 
 	virtual void SetTexture(shared_ptr<TextureResource> texture) { 
-		texture_ = texture ? texture : ResourceManager::GetBase()->GetEmptyTexture();
+		//texture_ = texture ? texture : ResourceManager::GetBase()->GetEmptyTexture();
+		texture_ = texture;
 	}
 	shared_ptr<TextureResource> GetTexture() { return texture_; }
 	virtual void SetShader(shared_ptr<ShaderResource> shader) {

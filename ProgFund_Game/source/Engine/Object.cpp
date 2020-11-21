@@ -175,6 +175,7 @@ void StaticRenderObject::Update() {
 void StaticRenderObject::UpdateVertexBuffer() {
 	size_t sizeBuffer = bufferVertex_->GetSize();
 	if (vertex_.size() > sizeBuffer) {
+		if (sizeBuffer == 0) sizeBuffer = 4;
 		while (vertex_.size() > sizeBuffer)
 			sizeBuffer = sizeBuffer << 1;
 		bufferVertex_->Create(sizeBuffer, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
@@ -186,6 +187,7 @@ void StaticRenderObject::UpdateVertexBuffer() {
 void StaticRenderObject::UpdateIndexBuffer() {
 	size_t sizeBuffer = bufferIndex_->GetSize();
 	if (index_.size() > sizeBuffer) {
+		if (sizeBuffer == 0) sizeBuffer = 4;
 		while (index_.size() > sizeBuffer)
 			sizeBuffer = sizeBuffer << 1;
 		DWORD fmt = D3DFMT_INDEX16;
@@ -251,9 +253,9 @@ HRESULT StaticRenderObject2D::Render() {
 			effect->SetFloatArray(handle, (float*)&scroll_, 2U);
 	}
 
-	shader_->SetTechnique("Render");
+	shader_->SetTechnique(texture_ ? "Render" : "RenderUntextured");
 
-	device->SetTexture(0, texture_->GetTexture());
+	device->SetTexture(0, texture_ ? texture_->GetTexture() : nullptr);
 	device->SetFVF(VertexTLX::VertexFormat);
 
 	device->SetVertexDeclaration(VertexBufferManager::GetBase()->GetDeclarationTLX());
@@ -271,9 +273,9 @@ HRESULT StaticRenderObject2D::Render() {
 			effect->BeginPass(iPass);
 
 			if (bIndex)
-				device->DrawIndexedPrimitive(primitiveType_, 0, 0, vertex_.size(), 0, countPrim);
+				hr = device->DrawIndexedPrimitive(primitiveType_, 0, 0, vertex_.size(), 0, countPrim);
 			else
-				device->DrawPrimitive(primitiveType_, 0, countPrim);
+				hr = device->DrawPrimitive(primitiveType_, 0, countPrim);
 
 			effect->EndPass();
 		}
