@@ -64,6 +64,7 @@ public:
 
 	size_t GetTaskCount() { return listTask_.size(); }
 
+	std::list<shared_ptr<TaskBase>>::iterator AddTask(TaskBase* task) { return AddTask(shared_ptr<TaskBase>(task)); }
 	std::list<shared_ptr<TaskBase>>::iterator AddTask(shared_ptr<TaskBase> task);
 	std::list<shared_ptr<TaskBase>>::iterator AddTask(std::list<shared_ptr<TaskBase>>::iterator itr, shared_ptr<TaskBase> task);
 protected:
