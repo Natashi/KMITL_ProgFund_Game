@@ -121,7 +121,7 @@ public:
 	T x, y;
 	T r;
 public:
-	DxCircle() : DxCircle(0, 0, 0, 0) {}
+	DxCircle() : DxCircle(0, 0, 0) {}
 	DxCircle(T _x, T _y, T _r) : x(_x), y(_y), r(_r) {}
 	DxCircle(const DxCircle<T>& src) {
 		x = src.x;
