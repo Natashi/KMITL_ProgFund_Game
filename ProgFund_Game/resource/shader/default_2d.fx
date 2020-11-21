@@ -42,7 +42,7 @@ technique Render {
 		PixelShader = compile ps_2_0 MainPS();
 	}
 }
-technique10 RenderUntextured {
+technique RenderUntextured {
 	pass P0 {
 		VertexShader = compile vs_2_0 MainVS();
 		PixelShader = compile ps_2_0 MainPS_Untextured();
