@@ -16,6 +16,9 @@ public:
 	D3DXVECTOR2 texcoord;
 
 	VertexTLX() : position(0, 0, 0), texcoord(0, 0), diffuse(0xffffffff) {}
+	VertexTLX(const D3DXVECTOR3& pos) : 
+		position(pos), texcoord(0, 0), diffuse(0xffffffff) {
+	}
 	VertexTLX(const D3DXVECTOR3& pos, const D3DXVECTOR2& tex) :
 		position(pos), texcoord(tex), diffuse(0xffffffff) {
 	}
