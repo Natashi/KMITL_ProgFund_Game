@@ -69,7 +69,7 @@ public:
 	void Initialize(HINSTANCE hInst);
 	void Release();
 
-	void BeginScene(D3DCOLOR clearColor = 0xff000022);
+	void BeginScene(D3DCOLOR clearColor = 0xff000000);
 	void EndScene(bool bPresent = true);
 
 	HWND GetHandle() { return hWnd_; }

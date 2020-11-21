@@ -237,20 +237,20 @@ void WindowMain::EndScene(bool bPresent) {
 void WindowMain::SetBlendMode(BlendMode mode) {
 	if (mode == previousBlendMode_) return;
 	if (previousBlendMode_ == (BlendMode)0xff) {
-		pDevice_->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-		pDevice_->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+		pDevice_->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-		pDevice_->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
+		pDevice_->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+
+		pDevice_->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+		pDevice_->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+		pDevice_->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+
+		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 		pDevice_->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
 	}
 	previousBlendMode_ = mode;
 
-	pDevice_->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-	pDevice_->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-
-#define SETBLENDOP(op, alp) \
-	pDevice_->SetRenderState(D3DRS_BLENDOP, op); \
-	pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, alp);
 #define SETBLENDARGS(sbc, dbc, sba, dba) \
 	pDevice_->SetRenderState(D3DRS_SRCBLEND, sbc); \
 	pDevice_->SetRenderState(D3DRS_DESTBLEND, dbc); \
@@ -259,29 +259,28 @@ void WindowMain::SetBlendMode(BlendMode mode) {
 
 	switch (mode) {
 	case BlendMode::Add:
-		SETBLENDOP(D3DBLENDOP_ADD, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 		SETBLENDARGS(D3DBLEND_SRCALPHA, D3DBLEND_ONE, D3DBLEND_ONE, D3DBLEND_INVSRCALPHA);
 		break;
 	case BlendMode::Subtract:
-		SETBLENDOP(D3DBLENDOP_REVSUBTRACT, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
 		SETBLENDARGS(D3DBLEND_SRCALPHA, D3DBLEND_ONE, D3DBLEND_ONE, D3DBLEND_INVSRCALPHA);
 		break;
 	case BlendMode::RevSubtract:
-		SETBLENDOP(D3DBLENDOP_SUBTRACT, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_SUBTRACT);
 		SETBLENDARGS(D3DBLEND_SRCALPHA, D3DBLEND_ONE, D3DBLEND_ONE, D3DBLEND_INVSRCALPHA);
 		break;
 	case BlendMode::Invert:
-		SETBLENDOP(D3DBLENDOP_ADD, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 		SETBLENDARGS(D3DBLEND_INVDESTCOLOR, D3DBLEND_INVSRCCOLOR, D3DBLEND_ONE, D3DBLEND_INVSRCALPHA);
 		break;
 	case BlendMode::Alpha:
 	default:
-		SETBLENDOP(D3DBLENDOP_ADD, TRUE);
+		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 		SETBLENDARGS(D3DBLEND_SRCALPHA, D3DBLEND_INVSRCALPHA, D3DBLEND_ONE, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 
-#undef SETBLENDOP
 #undef SETBLENDARGS
 }
 void WindowMain::SetViewPort(float x, float y, float w, float h, float zn, float zf) {
