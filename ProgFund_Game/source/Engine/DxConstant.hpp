@@ -2,6 +2,7 @@
 
 #define CD3DXVECTOR2 const D3DXVECTOR2&
 #define CD3DXVECTOR3 const D3DXVECTOR3&
+#define CD3DXVECTOR4 const D3DXVECTOR4&
 
 #define GET_INSTANCE(_type, _name) _type* _name = _type::GetBase();
 
