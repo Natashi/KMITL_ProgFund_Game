@@ -8,12 +8,8 @@
 //Stage_PlayerTask
 //*******************************************************************
 CONSTRUCT_TASK(Stage_PlayerTask) {
-	moveAngle_ = 0;
-	moveSpeed_ = 0;
-	moveSpeedX_ = 0;
-	moveSpeedY_ = 0;
+	playerData_.life = 2;
 
-	playerPos_ = D3DXVECTOR2(0, 0);
 	rcClip_ = DxRectangle<int>(0, 0, 640, 480);
 
 	frameAnimLeft_ = 0;
@@ -35,6 +31,9 @@ CONSTRUCT_TASK(Stage_PlayerTask) {
 		objSprite_.SetDestCenter();
 		objSprite_.UpdateVertexBuffer();
 	}
+
+	pPatternAngle_ = new Stage_MovePatternAngle(this);
+	pattern_ = shared_ptr<Stage_MovePattern>(pPatternAngle_);
 
 	_ChangePolarity();
 }
@@ -62,9 +61,9 @@ void Stage_PlayerTask::_Move() {
 			sx = speedMax * rateX;
 			sy = speedMax * rateY;
 
-			moveSpeed_ = hypot(sx, sy);
-			if (moveSpeed_ != 0)
-				moveAngle_ = hypot(sy, sx);
+			pPatternAngle_->speed_ = hypot(sx, sy);
+			if (pPatternAngle_->speed_ != 0)
+				pPatternAngle_->angDirection_ = atan2(sy, sx);
 		}
 	}
 
@@ -90,36 +89,36 @@ void Stage_PlayerTask::_Move() {
 			if (bKeyUp && !bKeyDown) sy -= speed;
 			if (!bKeyUp && bKeyDown) sy += speed;
 
-			moveSpeed_ = speed;
+			pPatternAngle_->speed_ = speed;
 			if (sx != 0 && sy != 0) {	//Normalize axes
 				constexpr double diagFactor = 1.0 / GM_SQRT2;
 				sx *= diagFactor;
 				sy *= diagFactor;
 
 				if (sx > 0)
-					moveAngle_ = sy > 0 ? Math::DegreeToRadian(45) : Math::DegreeToRadian(315);
+					pPatternAngle_->angDirection_ = Math::DegreeToRadian(sy > 0 ? 45 : 315);
 				else
-					moveAngle_ = sy > 0 ? Math::DegreeToRadian(135) : Math::DegreeToRadian(225);
+					pPatternAngle_->angDirection_ = Math::DegreeToRadian(sy > 0 ? 135 : 225);
 			}
 			else if (sx != 0 || sy != 0) {
 				if (sx != 0)
-					moveAngle_ = sx > 0 ? Math::DegreeToRadian(0) : Math::DegreeToRadian(180);
+					pPatternAngle_->angDirection_ = Math::DegreeToRadian(sx > 0 ? 0 : 180);
 				else if (sy != 0)
-					moveAngle_ = sy > 0 ? Math::DegreeToRadian(90) : Math::DegreeToRadian(270);
+					pPatternAngle_->angDirection_ = Math::DegreeToRadian(sy > 0 ? 90 : 270);
 			}
 			else {
-				moveSpeed_ = 0;
+				pPatternAngle_->speed_ = 0;
 			}
 		}
 	}
 
-	moveSpeedX_ = sx;
-	moveSpeedY_ = sy;
+	pPatternAngle_->c_ = sx;
+	pPatternAngle_->s_ = sy;
 
 	//Add and clip player position
 	{
-		playerPos_.x = std::clamp<float>(playerPos_.x + sx, rcClip_.left, rcClip_.right);
-		playerPos_.y = std::clamp<float>(playerPos_.y + sy, rcClip_.top, rcClip_.bottom);
+		posX_ = std::clamp<float>(posX_ + sx, rcClip_.left, rcClip_.right);
+		posY_ = std::clamp<float>(posY_ + sy, rcClip_.top, rcClip_.bottom);
 	}
 }
 void Stage_PlayerTask::_RunAnimation() {
@@ -135,7 +134,7 @@ void Stage_PlayerTask::_RunAnimation() {
 	static const int resetFrameLeft = 4 * FRAME_M;
 	static const int resetFrameRight = 4 * FRAME_M;
 
-	if (moveSpeedX_ < 0) {
+	if (pPatternAngle_->c_ < 0) {
 		if (frameAnimLeft_ < countSpriteLeft * FRAME_M - 1)
 			++frameAnimLeft_;
 		else
@@ -147,7 +146,7 @@ void Stage_PlayerTask::_RunAnimation() {
 		frameAnimLeft_ -= 2;
 	}
 
-	if (moveSpeedX_ > 0) {
+	if (pPatternAngle_->c_ > 0) {
 		if (frameAnimRight_ < countSpriteRight * FRAME_M - 1)
 			++frameAnimRight_;
 		else
@@ -199,8 +198,8 @@ void Stage_PlayerTask::_Shoot() {
 	if (stateShot == KeyState::Push || stateShot == KeyState::Hold) {
 		auto shotManager = ((Stage_MainScene*)parent_)->GetShotManager();
 
-		auto AddShot = [&](int index, D3DXVECTOR2 pos, float sp, double ang, int gr) {
-			if (index < 0) pos += playerPos_;
+		auto AddShot = [&](int index, D3DXVECTOR2 pos, float sp, double ang, int gr, double damage) {
+			if (index < 0) pos += D3DXVECTOR2(posX_, posY_);
 			else {
 				if (taskOption_[index] == nullptr) return;
 				pos += taskOption_[index]->GetPosition();
@@ -209,30 +208,31 @@ void Stage_PlayerTask::_Shoot() {
 			auto shot = shotManager->CreateShotA1(ShotOwnerType::Player,
 				pos, sp, -GM_PI_2 + GM_DTORA(ang), gr, 0);
 			shot->SetAngleZOff(-GM_PI_2);
+			shot->damage_ = damage;
 			shotManager->AddPlayerShot(shot, IntersectPolarity::White);
 		};
 
 		if (frame_ % 6 == 0) {
-			AddShot(-1, D3DXVECTOR2(10, 32), 48, 0, ShotPlayerConst::Main);
-			AddShot(-1, D3DXVECTOR2(-10, 32), 48, 0, ShotPlayerConst::Main);
+			AddShot(-1, D3DXVECTOR2(10, 32), 48, 0, ShotPlayerConst::Main, 2);
+			AddShot(-1, D3DXVECTOR2(-10, 32), 48, 0, ShotPlayerConst::Main, 2);
 		}
 
 		if (!bFocus_) {
 			if (frame_ % 6) return;
 			//double angOff = Math::DegreeToRadian(8 + sFrame * 8);
-			AddShot(0, D3DXVECTOR2(0, 1), 22, -4, ShotPlayerConst::Needle);
-			AddShot(0, D3DXVECTOR2(0, 1), 22, 7, ShotPlayerConst::Needle);
-			AddShot(1, D3DXVECTOR2(0, 1), 22, -7, ShotPlayerConst::Needle);
-			AddShot(1, D3DXVECTOR2(0, 1), 22, 4, ShotPlayerConst::Needle);
+			AddShot(0, D3DXVECTOR2(0, 1), 22, -4, ShotPlayerConst::Needle, 5);
+			AddShot(0, D3DXVECTOR2(0, 1), 22, 7, ShotPlayerConst::Needle, 5);
+			AddShot(1, D3DXVECTOR2(0, 1), 22, -7, ShotPlayerConst::Needle, 5);
+			AddShot(1, D3DXVECTOR2(0, 1), 22, 4, ShotPlayerConst::Needle, 5);
 			sFrame = (sFrame + 1) % 5;
 		}
 		else {
 			if (frame_ % 5) return;
-			AddShot(0, D3DXVECTOR2(-9, 4), 28, 0, ShotPlayerConst::Needle);
-			AddShot(0, D3DXVECTOR2(8, 4), 28, 0, ShotPlayerConst::Needle);
+			AddShot(0, D3DXVECTOR2(-9, 4), 28, 0, ShotPlayerConst::Needle, 3);
+			AddShot(0, D3DXVECTOR2(8, 4), 28, 0, ShotPlayerConst::Needle, 3);
 
-			AddShot(1, D3DXVECTOR2(-8, 4), 28, 0, ShotPlayerConst::Needle);
-			AddShot(1, D3DXVECTOR2(9, 4), 28, 0, ShotPlayerConst::Needle);
+			AddShot(1, D3DXVECTOR2(-8, 4), 28, 0, ShotPlayerConst::Needle, 3);
+			AddShot(1, D3DXVECTOR2(9, 4), 28, 0, ShotPlayerConst::Needle, 3);
 		}
 	}
 }
@@ -266,6 +266,12 @@ void Stage_PlayerTask::_ChangePolarity() {
 void Stage_PlayerTask::_Death() {
 	frameInvincibility_ = IFRAME_DEATH;
 
+	playerData_.countAbsorb = 0;
+	playerData_.scoreMultiplier = 1;
+	playerData_.specialCharge /= 2;
+
+	playerData_.life -= 1;
+
 	parent_->AddTask(new Player_DeadManagerTask(parent_));
 }
 
@@ -284,13 +290,21 @@ void Stage_PlayerTask::Update() {
 
 	//Update movement
 	_Move();
-	objSprite_.SetPosition(roundf(playerPos_.x), roundf(playerPos_.y), 1.0f);
+	objSprite_.SetPosition(roundf(posX_), roundf(posY_), 1.0f);
 
 	//Update player animation
 	_RunAnimation();
 
 	//Shoot stuff
 	_Shoot();
+	
+	//Increase multiplier
+	{
+		if (frameInvincibility_ == 0 && frame_ % 15 == 0) {
+			if (playerData_.scoreMultiplier < 64)
+				playerData_.scoreMultiplier += 0.1;
+		}
+	}
 
 	//Change polarity
 	{
@@ -308,19 +322,19 @@ void Stage_PlayerTask::Update() {
 		{
 			auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(true));
 			pTarget->SetParent(pOwnRefWeak_);
-			pTarget->SetCircle(DxCircle<float>(playerPos_.x, playerPos_.y, 
+			pTarget->SetCircle(DxCircle<float>(posX_, posY_,
 				frameInvincibility_ == 0 ? BARRIER_SIZE : BARRIER_SIZE_MIN));
 			pTarget->SetIntersectionSpace();
-			intersectionManager->AddTarget(pTarget);
+			intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
 		}
 
 		//Hit
 		if (frameInvincibility_ == 0) {
 			auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(false));
 			pTarget->SetParent(pOwnRefWeak_);
-			pTarget->SetCircle(DxCircle<float>(playerPos_.x, playerPos_.y, HITBOX_SIZE));
+			pTarget->SetCircle(DxCircle<float>(posX_, posY_, HITBOX_SIZE));
 			pTarget->SetIntersectionSpace();
-			intersectionManager->AddTarget(pTarget);
+			intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
 		}
 	}
 	if (frameInvincibility_ > 0) --frameInvincibility_;
@@ -372,7 +386,7 @@ void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget,
 
 	if (auto pOwnTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(ownTarget.get())) {
 		switch (otherTarget->GetTargetType()) {
-		case Stage_IntersectionTarget::TypeTarget::Enemy:
+		case Stage_IntersectionTarget::TypeTarget::EnemyToPlayer:
 			//if (auto pEnemy = dynamic_cast<Stage_IntersectionTarget_Player*>(ownTarget.get())) {
 				if (!pOwnTarget->IsGraze()) {
 					_Death();
@@ -381,9 +395,20 @@ void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget,
 			break;
 		case Stage_IntersectionTarget::TypeTarget::EnemyShot:
 			if (auto pShot = dynamic_cast<Stage_ObjShot*>(otherTarget->GetParent().lock().get())) {
-				if (!pOwnTarget->IsGraze() && pShot->GetPolarity() != GetPolarity()) 
-				{
-					_Death();
+				if (!pOwnTarget->IsGraze()) {
+					if (pShot->GetPolarity() != GetPolarity())
+						_Death();
+				}
+				else {
+					if (pShot->GetPolarity() == GetPolarity()) {
+						double mul = (int)(playerData_.scoreMultiplier * 10) / 10.0;	//Round to 1 decimal place
+						playerData_.stat.score += 100 * mul;
+
+						++(playerData_.countAbsorb);
+						++(playerData_.stat.totalAbsorb);
+						if (playerData_.stat.maxAbsorb < playerData_.countAbsorb)
+							playerData_.stat.maxAbsorb = playerData_.countAbsorb;
+					}
 				}
 			}
 			break;
@@ -549,8 +574,8 @@ void Player_BarrierTask::Update() {
 
 	{
 		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayer();
-		objBorder_.SetPosition(objPlayer->GetPosition());
-		objGlow_.SetPosition(objPlayer->GetPosition());
+		objBorder_.SetPosition(objPlayer->GetMovePosition());
+		objGlow_.SetPosition(objPlayer->GetMovePosition());
 	}
 
 	static const double BORDER_SC = Stage_PlayerTask::BARRIER_SIZE / (double)32 * 1.5;
@@ -590,7 +615,7 @@ Player_OptionTask::Player_OptionTask(Scene* parent,
 
 	{
 		auto objPlayer = ((Stage_MainScene*)parent_)->GetPlayer();
-		position_ = objPlayer->GetPosition();
+		position_ = objPlayer->GetMovePosition();
 	}
 }
 
@@ -659,12 +684,12 @@ void Player_DeadManagerTask::Update() {
 
 	switch (frame_) {
 	case 0:
-		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetPosition();
+		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetMovePosition();
 		parent_->AddTask(new Player_DeadCircleTask(parent_, posInvert));
 		parent_->AddTask(new Player_DeadParticleTask(parent_, posInvert));
 		break;
 	case WT_1:
-		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetPosition();
+		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetMovePosition();
 		parent_->AddTask(new Player_DeadInvertTask(parent_, 1100, DU_INV, posInvert));
 		break;
 	case WT_1 + WT_2:
@@ -792,12 +817,12 @@ Player_DeadParticleTask::Player_DeadParticleTask(Scene* parent, CD3DXVECTOR2 pos
 		newParticle.obj.SetDestCenter();
 		newParticle.obj.UpdateVertexBuffer();
 
-		newParticle.obj.SetBlendType(BlendMode::RevSubtract);
+		newParticle.obj.SetBlendType(BlendMode::Subtract);
 		newParticle.obj.SetColor(rand->GetInt(48, 255), 16, rand->GetInt(48, 255));
 
 		newParticle.pos = pos + D3DXVECTOR2(rand->GetReal(-4, 4), rand->GetReal(-4, 4));
 		{
-			double angle = GM_PI_X2 / countParticle * (i + rand->GetReal(-0.3, 0.3));
+			double angle = GM_PI_X2 / countParticle * (i + rand->GetReal(-0.35, 0.35));
 			double speed = rand->GetReal(3.2, 9.6);
 			newParticle.move = D3DXVECTOR2(speed * cos(angle), speed * sin(angle));
 		}

@@ -198,17 +198,20 @@
     <ClCompile Include="source\Engine\Table.cpp" />
     <ClCompile Include="source\Engine\Vertex.cpp" />
     <ClCompile Include="source\Engine\Window.cpp" />
+    <ClCompile Include="source\Game\Enemy.cpp" />
     <ClCompile Include="source\Game\Intersection.cpp" />
     <ClCompile Include="source\Game\Menu.cpp" />
     <ClCompile Include="source\Game\ObjMove.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\Game\Shot.cpp" />
     <ClCompile Include="source\Game\StageMain.cpp" />
+    <ClCompile Include="source\Game\Stage\BossMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\Engine\DxConstant.hpp" />
     <ClInclude Include="source\Engine\Object.hpp" />
+    <ClInclude Include="source\Engine\PointerExtensions.hpp" />
     <ClInclude Include="source\Engine\Rand.hpp" />
     <ClInclude Include="source\Engine\Shape.hpp" />
     <ClInclude Include="source\Engine\Sound.hpp" />
@@ -220,6 +223,7 @@
     <ClInclude Include="source\Engine\Scene.hpp" />
     <ClInclude Include="source\Engine\Window.hpp" />
     <ClInclude Include="source\Engine\Utility.hpp" />
+    <ClInclude Include="source\Game\Enemy.hpp" />
     <ClInclude Include="source\Game\GConstant.hpp" />
     <ClInclude Include="source\Game\Intersection.hpp" />
     <ClInclude Include="source\Game\Menu.hpp" />
@@ -227,6 +231,7 @@
     <ClInclude Include="source\Game\Player.hpp" />
     <ClInclude Include="source\Game\Shot.hpp" />
     <ClInclude Include="source\Game\StageMain.hpp" />
+    <ClInclude Include="source\Game\Stage\BossMain.hpp" />
     <ClInclude Include="source\Game\System.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

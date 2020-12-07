@@ -6,6 +6,8 @@
 static constexpr byte LAYER_PLAYER = 2;
 static constexpr byte LAYER_OPTION = 3;
 
+static constexpr byte LAYER_ENEMY = 5;
+
 static constexpr byte LAYER_SHOT = 7;
 
 static constexpr byte LAYER_EX_UI = 13;
@@ -17,6 +19,17 @@ public:
 	static int RandDirection() {
 		GET_INSTANCE(RandProvider, rand);
 		return (rand->GetInt() & 1) * 2 - 1;
+	}
+
+	static void LoadSystemResources() {
+		GET_INSTANCE(ResourceManager, resourceManager);
+
+		resourceManager->LoadResource<TextureResource>("resource/img/system/ascii.png", "img/system/ascii.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/system/ascii_960.png", "img/system/ascii_960.png");
+
+		resourceManager->LoadResource<TextureResource>("resource/img/system/sys_digit.png", "img/system/sys_digit.png");
+
+		resourceManager->LoadResource<TextureResource>("resource/img/system/player_stat.png", "img/system/player_stat.png");
 	}
 
 	static DxRectangle<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {
@@ -138,6 +151,36 @@ public:
 
 		return DxRectangle<int>::SetFromIndex(rect_w, rect_h, rect_i[0], rect_i[1]);
 	}
+
+	//Vertex arrangement:
+	//   0---1
+	//   |   |
+	//   2---3
+	static void SetVertexAsciiSingle(VertexTLX(&verts)[4], char ch, const DxRectangle<float>& rcDst,
+		CD3DXVECTOR2 rectSize, CD3DXVECTOR2 texSize) 
+	{
+		DxRectangle<float> rcChar = SystemUtility::GetAsciiRect(ch, rectSize.x, rectSize.y);
+		rcChar /= DxRectangle<float>::SetFromSize(texSize);
+
+		verts[0] = VertexTLX(D3DXVECTOR3(rcDst.left, rcDst.top, 1), D3DXVECTOR2(rcChar.left, rcChar.top));
+		verts[1] = VertexTLX(D3DXVECTOR3(rcDst.right, rcDst.top, 1), D3DXVECTOR2(rcChar.right, rcChar.top));
+		verts[2] = VertexTLX(D3DXVECTOR3(rcDst.left, rcDst.bottom, 1), D3DXVECTOR2(rcChar.left, rcChar.bottom));
+		verts[3] = VertexTLX(D3DXVECTOR3(rcDst.right, rcDst.bottom, 1), D3DXVECTOR2(rcChar.right, rcChar.bottom));
+		for (int i = 0; i < 4; ++i)
+			verts[i].Bias(-0.5f);
+	}
+	static void SetVertexAsciiSingle(VertexTLX(&verts)[4], const DxRectangle<int>& rcRect, 
+		const DxRectangle<float>& rcDst, CD3DXVECTOR2 texSize)
+	{
+		DxRectangle<float> rcChar = DxRectangle<float>(rcRect) / DxRectangle<float>::SetFromSize(texSize);
+
+		verts[0] = VertexTLX(D3DXVECTOR3(rcDst.left, rcDst.top, 1), D3DXVECTOR2(rcChar.left, rcChar.top));
+		verts[1] = VertexTLX(D3DXVECTOR3(rcDst.right, rcDst.top, 1), D3DXVECTOR2(rcChar.right, rcChar.top));
+		verts[2] = VertexTLX(D3DXVECTOR3(rcDst.left, rcDst.bottom, 1), D3DXVECTOR2(rcChar.left, rcChar.bottom));
+		verts[3] = VertexTLX(D3DXVECTOR3(rcDst.right, rcDst.bottom, 1), D3DXVECTOR2(rcChar.right, rcChar.bottom));
+		for (int i = 0; i < 4; ++i)
+			verts[i].Bias(-0.5f);
+	}
 };
 
 class UtilTask_FadeBGM : public TaskBase {
@@ -174,14 +217,14 @@ public:
 		framePos_[2] = frameOut;
 		frameEnd_ = frameIn + frameStay + frameOut + 1;
 		{
-			objFade_.SetSourceRect(DxRectangle(0, 0, 640, 480));
 			objFade_.SetDestRect(DxRectangle(0, 0, 640, 480));
 			objFade_.SetColor(color);
 			objFade_.UpdateVertexBuffer();
 		}
 	}
 
-	virtual void Render() {
+	virtual void Render(byte layer) {
+		if (layer != Scene::MAX_RENDER_LAYER - 1) return;
 		objFade_.Render();
 	}
 	virtual void Update() {

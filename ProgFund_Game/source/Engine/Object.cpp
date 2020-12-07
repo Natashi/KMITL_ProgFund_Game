@@ -153,6 +153,62 @@ VertexTLX* RenderObject::GetVertex(size_t index) {
 }
 
 //*******************************************************************
+//DynamicRenderObject
+//*******************************************************************
+DynamicRenderObject::DynamicRenderObject() {
+	Initialize();
+}
+DynamicRenderObject::~DynamicRenderObject() {
+}
+
+void DynamicRenderObject::Initialize() {
+}
+void DynamicRenderObject::Update() {
+}
+
+HRESULT DynamicRenderObject::_Render(DxVertexBuffer* bufferVertex, DxIndexBuffer* bufferIndex) {
+	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
+
+	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+
+	device->SetFVF(VertexTLX::VertexFormat);
+
+	device->SetVertexDeclaration(VertexBufferManager::GetBase()->GetDeclarationTLX());
+	device->SetStreamSource(0, bufferVertex->GetBuffer(), 0, sizeof(VertexTLX));
+
+	ID3DXEffect* effect = shader_->GetEffect();
+	{
+		size_t countPrim = GetPrimitiveCount();
+
+		bool bIndex = index_.size() > 0;
+		if (bIndex)
+			device->SetIndices(bufferIndex->GetBuffer());
+
+		UINT countPass = 1;
+		HRESULT hr = effect->Begin(&countPass, 0);
+		if (FAILED(hr)) return hr;
+		for (UINT iPass = 0; iPass < countPass; ++iPass) {
+			effect->BeginPass(iPass);
+
+			if (bIndex)
+				hr = device->DrawIndexedPrimitive(primitiveType_, 0, 0, vertex_.size(), 0, countPrim);
+			else
+				hr = device->DrawPrimitive(primitiveType_, 0, countPrim);
+
+			 effect->EndPass();
+		}
+		effect->End();
+
+		if (FAILED(hr)) return hr;
+	}
+
+	device->SetVertexDeclaration(nullptr);
+	device->SetIndices(nullptr);
+
+	return S_OK;
+}
+
+//*******************************************************************
 //StaticRenderObject
 //*******************************************************************
 StaticRenderObject::StaticRenderObject() {
@@ -198,26 +254,6 @@ void StaticRenderObject::UpdateIndexBuffer() {
 	bufferIndex_->UpdateBuffer(&lockParam);
 }
 
-/*
-//*******************************************************************
-//DynamicRenderObject
-//*******************************************************************
-DynamicRenderObject::DynamicRenderObject() {
-	Initialize();
-}
-DynamicRenderObject::~DynamicRenderObject() {
-}
-
-void DynamicRenderObject::Initialize() {
-	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
-	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, D3DUSAGE_DYNAMIC));
-	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, D3DUSAGE_DYNAMIC));
-	bufferVertex_->Create(512U, sizeof(VertexTLX), D3DPOOL_DEFAULT, (DWORD*)&VertexTLX::VertexFormat);
-}
-void DynamicRenderObject::Update() {
-}
-*/
-
 //*******************************************************************
 //StaticRenderObject2D
 //*******************************************************************
@@ -225,26 +261,26 @@ StaticRenderObject2D::StaticRenderObject2D() {
 	bPermitCamera_ = true;
 }
 StaticRenderObject2D::~StaticRenderObject2D() {
-
 }
 
 HRESULT StaticRenderObject2D::Render() {
 	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
 
 	WindowMain* window = WindowMain::GetBase();
-	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+	IDirect3DDevice9* device = window->GetDevice();
 
 	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
 	window->SetBlendMode(blend_);
 
-	D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
-		&angleZ_, &scale_, nullptr);
-
-	ID3DXEffect* effect = shader_->GetEffect();
 	{
+		ID3DXEffect* effect = shader_->GetEffect();
+
 		D3DXHANDLE handle = nullptr;
-		if (handle = effect->GetParameterBySemantic(nullptr, "WORLD"))
+		if (handle = effect->GetParameterBySemantic(nullptr, "WORLD")) {
+			D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
+				&angleZ_, &scale_, nullptr);
 			effect->SetMatrix(handle, &matWorld);
+		}
 		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
 			effect->SetMatrix(handle, window->GetViewportMatrix());
 		if (handle = effect->GetParameterBySemantic(nullptr, "OBJCOLOR"))
@@ -254,37 +290,66 @@ HRESULT StaticRenderObject2D::Render() {
 	}
 
 	shader_->SetTechnique(texture_ ? "Render" : "RenderUntextured");
-
 	device->SetTexture(0, texture_ ? texture_->GetTexture() : nullptr);
-	device->SetFVF(VertexTLX::VertexFormat);
 
-	device->SetVertexDeclaration(VertexBufferManager::GetBase()->GetDeclarationTLX());
-	device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
+	return _Render(bufferVertex_.get(), bufferIndex_.get());
+}
+
+//*******************************************************************
+//DynamicRenderObject2D
+//*******************************************************************
+DynamicRenderObject2D::DynamicRenderObject2D() {
+	bPermitCamera_ = true;
+}
+DynamicRenderObject2D::~DynamicRenderObject2D() {
+}
+
+HRESULT DynamicRenderObject2D::Render() {
+	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
+
+	WindowMain* window = WindowMain::GetBase();
+	IDirect3DDevice9* device = window->GetDevice();
+
+	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+	window->SetBlendMode(blend_);
 
 	{
-		size_t countPrim = GetPrimitiveCount();
-		bool bIndex = index_.size() > 0;
-		if (bIndex) device->SetIndices(bufferIndex_->GetBuffer());
+		ID3DXEffect* effect = shader_->GetEffect();
 
-		UINT countPass = 1;
-		HRESULT hr = effect->Begin(&countPass, 0);
-		if (FAILED(hr)) return hr;
-		for (UINT iPass = 0; iPass < countPass; ++iPass) {
-			effect->BeginPass(iPass);
-
-			if (bIndex)
-				hr = device->DrawIndexedPrimitive(primitiveType_, 0, 0, vertex_.size(), 0, countPrim);
-			else
-				hr = device->DrawPrimitive(primitiveType_, 0, countPrim);
-
-			effect->EndPass();
+		D3DXHANDLE handle = nullptr;
+		if (handle = effect->GetParameterBySemantic(nullptr, "WORLD")) {
+			D3DXMATRIX matWorld = RenderObject::CreateWorldMatrix2D(&position_, &angleX_, &angleY_,
+				&angleZ_, &scale_, nullptr);
+			effect->SetMatrix(handle, &matWorld);
 		}
-		effect->End();
+		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
+			effect->SetMatrix(handle, window->GetViewportMatrix());
+		if (handle = effect->GetParameterBySemantic(nullptr, "OBJCOLOR"))
+			effect->SetVector(handle, &color_);
+		if (handle = effect->GetParameterBySemantic(nullptr, "UVSCROLL")) {
+			float tmp[] = { 0, 0 };
+			effect->SetFloatArray(handle, tmp, 2U);
+		}
 	}
 
-	device->SetVertexDeclaration(nullptr);
+	shader_->SetTechnique(texture_ ? "Render" : "RenderUntextured");
+	device->SetTexture(0, texture_ ? texture_->GetTexture() : nullptr);
 
-	return S_OK;
+	VertexBufferManager* vertexManager = VertexBufferManager::GetBase();
+	DxVertexBuffer* bufferVertex = vertexManager->GetDynamicVertexBufferTLX();
+	DxIndexBuffer* bufferIndex = vertexManager->GetDynamicIndexBuffer();
+	{
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(vertex_, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
+		bufferVertex->UpdateBuffer(&lockParam);
+	}
+	if (index_.size() > 0) {
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(index_, DX_MAX_BUFFER_SIZE, sizeof(uint16_t));
+		bufferIndex->UpdateBuffer(&lockParam);
+	}
+
+	return _Render(bufferVertex, bufferIndex);
 }
 
 //*******************************************************************
@@ -317,13 +382,14 @@ void Sprite2D::SetSourceRectNormalized(const DxRectangle<float>& rc) {
 	//UpdateVertexBuffer();
 }
 void Sprite2D::SetSourceRect(const DxRectangle<int>& rc) {
-	float width = texture_->GetImageInfo()->Width;
-	float height = texture_->GetImageInfo()->Height;
+	float width = texture_->GetWidth();
+	float height = texture_->GetHeight();
 
-	GetVertex(0)->texcoord = D3DXVECTOR2(rc.left / width, rc.top / height);
-	GetVertex(1)->texcoord = D3DXVECTOR2(rc.right / width, rc.top / height);
-	GetVertex(2)->texcoord = D3DXVECTOR2(rc.left / width, rc.bottom / height);
-	GetVertex(3)->texcoord = D3DXVECTOR2(rc.right / width, rc.bottom / height);
+	DxRectangle<float> rcCopy = DxRectangle<float>(rc) + DxRectangle<float>(0.5, 0.5, -0.5, -0.5);
+	GetVertex(0)->texcoord = D3DXVECTOR2(rcCopy.left / width, rcCopy.top / height);
+	GetVertex(1)->texcoord = D3DXVECTOR2(rcCopy.right / width, rcCopy.top / height);
+	GetVertex(2)->texcoord = D3DXVECTOR2(rcCopy.left / width, rcCopy.bottom / height);
+	GetVertex(3)->texcoord = D3DXVECTOR2(rcCopy.right / width, rcCopy.bottom / height);
 
 	//UpdateVertexBuffer();
 }
@@ -332,8 +398,10 @@ void Sprite2D::SetDestRect(const DxRectangle<float>& rc) {
 	GetVertex(1)->position = D3DXVECTOR3(rc.right, rc.top, 1.0f);
 	GetVertex(2)->position = D3DXVECTOR3(rc.left, rc.bottom, 1.0f);
 	GetVertex(3)->position = D3DXVECTOR3(rc.right, rc.bottom, 1.0f);
-	for (int i = 0; i < 4; ++i)
-		GetVertex(i)->Bias(-0.5f);
+	if (texture_) {
+		for (int i = 0; i < 4; ++i)
+			GetVertex(i)->Bias(-0.5f);
+	}
 
 	//UpdateVertexBuffer();
 }

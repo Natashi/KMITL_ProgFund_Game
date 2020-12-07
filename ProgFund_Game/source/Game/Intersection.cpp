@@ -66,26 +66,25 @@ void Stage_IntersectionManager::Update() {
 	}
 }
 
-void Stage_IntersectionManager::AddTarget(shared_ptr<Stage_IntersectionTarget> target) {
+void Stage_IntersectionManager::AddTarget(Stage_IntersectionTarget::TypeTarget type, shared_ptr<Stage_IntersectionTarget> target) {
 	if (target == nullptr) return;
-	if (shared_ptr<Stage_ObjCollision> obj = target->GetParent().lock()) {
-		Stage_IntersectionTarget::TypeTarget type = target->GetTargetType();
-		switch (type) {
-		case Stage_IntersectionTarget::TypeTarget::Player:
-			listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetA(target);
-			break;
-		case Stage_IntersectionTarget::TypeTarget::PlayerShot:
-		case Stage_IntersectionTarget::TypeTarget::PlayerSpell:
-			listSpace_[SPACE_PLAYERSHOT_ENEMY]->RegistTargetA(target);
-			break;
-		case Stage_IntersectionTarget::TypeTarget::Enemy:
-			listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetB(target);
-			listSpace_[SPACE_PLAYERSHOT_ENEMY]->RegistTargetB(target);
-			break;
-		case Stage_IntersectionTarget::TypeTarget::EnemyShot:
-			listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetB(target);
-			break;
-		}
+	switch (type) {
+	case Stage_IntersectionTarget::TypeTarget::Player:
+		listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetA(target);
+		break;
+	case Stage_IntersectionTarget::TypeTarget::PlayerShot:
+	case Stage_IntersectionTarget::TypeTarget::PlayerSpell:
+		listSpace_[SPACE_PLAYERSHOT_ENEMY]->RegistTargetA(target);
+		break;
+	case Stage_IntersectionTarget::TypeTarget::EnemyToPlayer:
+		listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetB(target);
+		break;
+	case Stage_IntersectionTarget::TypeTarget::EnemyToPlayerShot:
+		listSpace_[SPACE_PLAYERSHOT_ENEMY]->RegistTargetB(target);
+		break;
+	case Stage_IntersectionTarget::TypeTarget::EnemyShot:
+		listSpace_[SPACE_PLAYER_ENEMY]->RegistTargetB(target);
+		break;
 	}
 }
 bool Stage_IntersectionManager::IsIntersected(shared_ptr<Stage_IntersectionTarget>& target1, 
@@ -213,7 +212,7 @@ void Stage_ObjCollision::UpdateRelativeTarget(float posX, float posY) {
 void Stage_ObjCollision::RegistRelativeTarget(Stage_IntersectionManager* manager) {
 	for (auto& iTargetList : listRelativeTarget_) {
 		if (iTargetList.orgShape)
-			manager->AddTarget(iTargetList.relTarget);
+			manager->AddTarget(iTargetList.relTarget->GetTargetType(), iTargetList.relTarget);
 	}
 }
 

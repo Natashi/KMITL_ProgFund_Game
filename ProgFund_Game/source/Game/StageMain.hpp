@@ -9,6 +9,7 @@
 #include "Intersection.hpp"
 #include "Player.hpp"
 #include "Shot.hpp"
+#include "Enemy.hpp"
 
 class Stage_SceneLoader : public TaskBase {
 public:
@@ -21,7 +22,9 @@ public:
 class Stage_MainSceneUI : public Scene {
 private:
 	Sprite2D objFrame_;
-	StaticRenderObject2D objSideText_;
+
+	//shared_ptr<StageUI_Score> pTaskScore_;
+	//shared_ptr<StageUI_PlayerLife> pTaskPlayerLife_;
 	//DynamicRenderObject2D objSideTextDigits_;
 public:
 	Stage_MainSceneUI(SceneManager* manager);
@@ -31,7 +34,6 @@ public:
 	virtual void Update();
 };
 
-class Stage_PlayerTask;
 class Stage_MainScene : public Scene {
 private:
 	shared_ptr<Stage_PlayerTask> pTaskPlayer_;

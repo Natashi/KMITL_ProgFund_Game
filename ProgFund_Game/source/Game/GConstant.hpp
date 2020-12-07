@@ -30,3 +30,7 @@ static inline T DecUntil(T& v, I rate, L lim) {
 	v = std::max((T)lim, v - (T)rate);
 	return v;
 }
+
+static inline D3DXVECTOR2 OffsetPos(CD3DXVECTOR2 bsPos, float ang, float rad) {
+	return bsPos + D3DXVECTOR2(cosf(ang), sinf(ang)) * rad;
+}

@@ -101,10 +101,14 @@ public:
 	Stage_ShotAnimation* GetEnemyShotData(int id);
 	Stage_ShotAnimation* GetPlayerShotData(int id);
 
-	void AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
-	void AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
 	shared_ptr<Stage_ObjShot> CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos,
 		double speed, double angle, int graphic, size_t delay);
+	void AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
+	shared_ptr<Stage_ObjShot> AddEnemyShot(CD3DXVECTOR2 pos, double speed, double angle,
+		int graphic, size_t delay, IntersectPolarity polarity);
+	void AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity);
+	shared_ptr<Stage_ObjShot> AddPlayerShot(CD3DXVECTOR2 pos, double speed, double angle,
+		int graphic, size_t delay, IntersectPolarity polarity);
 
 	void DeleteInCircle(ShotOwnerType typeOwner, int cx, int cy, int radius);
 
@@ -128,8 +132,7 @@ protected:
 public:
 	Stage_ShotRenderer();
 
-	virtual HRESULT Render() { return DSERR_UNSUPPORTED; }
-	virtual HRESULT Render(Stage_ShotManager* manager);
+	virtual HRESULT Render();
 	virtual void Update() {}
 
 	void AddSquareVertex(VertexTLX* listVertex);
@@ -244,6 +247,7 @@ public:
 
 	void SetShotData(int id);
 	void SetShotData(Stage_ShotAnimation* id);
+	Stage_ShotAnimation* GetShotData() { return pShotData_; }
 
 	virtual void SetTexture(shared_ptr<TextureResource> texture) { texture_ = texture; }
 	virtual void SetShader(shared_ptr<ShaderResource> shader) { shader_ = shader; }
@@ -256,4 +260,35 @@ public:
 
 	//bool CanIntersect() { return bIntersectionEnable_; }
 	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget);
+};
+
+//--------------------------------------------------------------------------
+
+class Stage_ShotDeleteEffectRendererTask : public TaskBase {
+	friend class Stage_ShotManager;
+public:
+	struct ParticleData {
+		D3DXVECTOR2 pos;
+		D3DXVECTOR2 move;
+		D3DXVECTOR2 angle;
+		float scale;
+		size_t life;
+	};
+	static constexpr size_t FRAME_PER_STEP = 3;
+protected:
+	std::list<ParticleData*> listParticle_;
+	std::vector<ParticleData> vecRenderParticle_;
+	size_t countRender_;
+
+	shared_ptr<TextureResource> texture_;
+	shared_ptr<ShaderResource> shader_;
+	shared_ptr<DxVertexBuffer> bufferVertex_;
+	shared_ptr<DxIndexBuffer> bufferIndex_;
+public:
+	Stage_ShotDeleteEffectRendererTask(Scene* parent);
+
+	virtual void Render(byte layer);
+	virtual void Update();
+
+	void AddInstance(Stage_ObjShot* shot);
 };

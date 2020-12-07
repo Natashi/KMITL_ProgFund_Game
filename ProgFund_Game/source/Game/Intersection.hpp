@@ -9,12 +9,62 @@ enum class IntersectPolarity : byte {
 	Black,
 };
 
+class Stage_IntersectionManager;
+class Stage_ObjCollision;
+class Stage_IntersectionTarget {
+	friend class Stage_IntersectionManager;
+public:
+	enum class TypeTarget : byte {
+		None,
+		Player,
+		PlayerShot,
+		PlayerSpell,
+		EnemyToPlayer,
+		EnemyToPlayerShot,
+		EnemyShot,
+	};
+protected:
+	TypeTarget type_;
+	weak_ptr<Stage_ObjCollision> parent_;
+
+	DxRectangle<int> intersectionSpace_;
+public:
+	Stage_IntersectionTarget();
+
+	const DxRectangle<int>& GetIntersectionSpaceRect() const { return intersectionSpace_; }
+	void SetIntersectionSpace(const DxRectangle<int>& rect) { intersectionSpace_ = rect; }
+	virtual void SetIntersectionSpace() = 0;
+
+	TypeTarget GetTargetType() const { return type_; }
+	void SetTargetType(TypeTarget type) { type_ = type; }
+
+	weak_ptr<Stage_ObjCollision> GetParent() { return parent_; }
+	void SetParent(weak_ptr<Stage_ObjCollision> obj) {
+		if (!obj.expired()) parent_ = obj;
+	}
+
+	void ClearObjectIntersectedIdList();
+};
+class Stage_IntersectionTarget_Circle : public Stage_IntersectionTarget {
+	friend class Stage_IntersectionManager;
+protected:
+	DxCircle<float> circle_;
+public:
+	Stage_IntersectionTarget_Circle();
+
+	virtual void SetIntersectionSpace();
+
+	DxCircle<float>& GetCircle() { return circle_; }
+	void SetCircle(const DxCircle<float>& circle) {
+		circle_ = circle; SetIntersectionSpace();
+	}
+};
+
 class Stage_MainScene;
 
 class Stage_IntersectionManager;
 class Stage_IntersectionSpace;
 
-class Stage_IntersectionTarget;
 class Stage_ObjCollision;
 
 class Stage_IntersectionManager : public TaskBase {
@@ -32,7 +82,10 @@ public:
 
 	virtual void Update();
 
-	void AddTarget(shared_ptr<Stage_IntersectionTarget> target);
+	void AddTarget(Stage_IntersectionTarget::TypeTarget type, shared_ptr<Stage_IntersectionTarget> target);
+	void AddTarget(shared_ptr<Stage_IntersectionTarget> target) {
+		AddTarget(target->GetTargetType(), target);
+	}
 
 	static bool IsIntersected(shared_ptr<Stage_IntersectionTarget>& target1, shared_ptr<Stage_IntersectionTarget>& target2);
 };
@@ -97,52 +150,4 @@ public:
 	void UpdateRelativeTarget(float posX, float posY);
 	void RegistRelativeTarget(Stage_IntersectionManager* manager);
 	size_t GetRelativeTargetCount() { return listRelativeTarget_.size(); }
-};
-
-class Stage_IntersectionTarget {
-	friend class Stage_IntersectionManager;
-public:
-	enum class TypeTarget : byte {
-		None,
-		Player,
-		PlayerShot,
-		PlayerSpell,
-		Enemy,
-		EnemyShot,
-	};
-protected:
-	TypeTarget type_;
-	weak_ptr<Stage_ObjCollision> parent_;
-
-	DxRectangle<int> intersectionSpace_;
-public:
-	Stage_IntersectionTarget();
-
-	const DxRectangle<int>& GetIntersectionSpaceRect() const { return intersectionSpace_; }
-	void SetIntersectionSpace(const DxRectangle<int>& rect) { intersectionSpace_ = rect; }
-	virtual void SetIntersectionSpace() = 0;
-
-	TypeTarget GetTargetType() const { return type_; }
-	void SetTargetType(TypeTarget type) { type_ = type; }
-
-	weak_ptr<Stage_ObjCollision> GetParent() { return parent_; }
-	void SetParent(weak_ptr<Stage_ObjCollision> obj) {
-		if (!obj.expired()) parent_ = obj;
-	}
-
-	void ClearObjectIntersectedIdList();
-};
-class Stage_IntersectionTarget_Circle : public Stage_IntersectionTarget {
-	friend class Stage_IntersectionManager;
-protected:
-	DxCircle<float> circle_;
-public:
-	Stage_IntersectionTarget_Circle();
-
-	virtual void SetIntersectionSpace();
-
-	DxCircle<float>& GetCircle() { return circle_; }
-	void SetCircle(const DxCircle<float>& circle) {
-		circle_ = circle; SetIntersectionSpace();
-	}
 };

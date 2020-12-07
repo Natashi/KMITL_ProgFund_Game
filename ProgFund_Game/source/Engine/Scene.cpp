@@ -36,7 +36,6 @@ void SceneManager::Render() {
 void SceneManager::Update() {
 	primaryScene_->Update();
 
-	size_t i = 0;
 	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene) {
 			iScene->Update();

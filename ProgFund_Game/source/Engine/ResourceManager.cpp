@@ -57,12 +57,10 @@ void ResourceManager::Initialize() {
 		this->AddResource(textureEmpty_, "__TEXTURE_NULL__");
 	}
 	{
-		shaderDefault_ = std::make_shared<ShaderResource>();
-		shaderDefault_->LoadFromFile(PathProperty::GetWorkingDirectory() + "resource/shader/default_2d.fx");
-
+		shaderDefault_ = this->LoadResource<ShaderResource>("resource/shader/default_2d.fx", "__SHADER_DEFAULT__");
 		shaderDefault_->SetTechniqueByName("Render");
 
-		this->AddResource(shaderDefault_, "__SHADER_DEFAULT__");
+		this->LoadResource<ShaderResource>("resource/shader/default_2d_instanced.fx", "shader/default_2d_instanced.fx");
 	}
 }
 void ResourceManager::Release() {

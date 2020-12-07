@@ -9,14 +9,12 @@ Menu_SplashScene::Menu_SplashScene(SceneManager* manager) : Scene(manager) {
 	GET_INSTANCE(ResourceManager, resourceManager);
 
 	//System
-	resourceManager->LoadResource<TextureResource>("resource/img/system/ascii.png", "img/system/ascii.png");
-	resourceManager->LoadResource<TextureResource>("resource/img/system/ascii_960.png", "img/system/ascii_960.png");
+	SystemUtility::LoadSystemResources();
 
 	//Splash
 	resourceManager->LoadResource<TextureResource>("resource/img/menu/splash_2.png", "img/menu/splash_2.png");
 
-	auto taskSplash = std::make_shared<Menu_SplashTask>(this);
-	this->AddTask(taskSplash);
+	this->AddTask(new Menu_SplashTask(this));
 
 	bAutoDelete_ = true;
 }
@@ -36,14 +34,14 @@ Menu_SplashScene::~Menu_SplashScene() {
 //Menu_SplashTask
 //*******************************************************************
 namespace MenuParams {
-	static constexpr size_t SPLASH_TRANSITION = 60;
+	static constexpr size_t SPLASH_TRANSITION = 40;
 	static constexpr size_t SPLASH_WAITSPLASH = 120;
 	static constexpr size_t SPLASH_TRANSWAIT = SPLASH_TRANSITION + SPLASH_WAITSPLASH;
 	static constexpr size_t SPLASH_SINGLESEQ = SPLASH_TRANSWAIT + SPLASH_TRANSITION;
 };
 
 CONSTRUCT_TASK(Menu_SplashTask) {
-	frameEnd_ = MenuParams::SPLASH_SINGLESEQ + 90;
+	frameEnd_ = MenuParams::SPLASH_SINGLESEQ + 30;
 	frameOff_ = 20;
 
 	objSplash_.SetPosition(320, 240, 1);
@@ -218,8 +216,7 @@ void Menu_Child_ParentMenu::Update() {
 			switch (selectIndex_) {
 			case MenuParams::MAIN_INDEX_START:
 			{
-				auto taskMenu = std::make_shared<Menu_Child_RankMenu>((Menu_MainScene*)parent_);
-				parent_->AddTask(taskMenu);
+				parent_->AddTask(new Menu_Child_RankMenu((Menu_MainScene*)parent_));
 				break;
 			}
 			case MenuParams::MAIN_INDEX_OPTIONS:
@@ -348,15 +345,11 @@ void Menu_Child_RankMenu::Update() {
 			frameEnd_ = frame_ + 40;
 
 			{
-				auto rearScene = parent_->GetParentManager()->GetRearScene().get();
-				auto taskFade = shared_ptr<UtilTask_ColorFade>(
-					new UtilTask_ColorFade(rearScene, 30, 30, 70, D3DCOLOR_XRGB(0, 0, 0)));
-				rearScene->AddTask(taskFade);
-			}
-			{
 				auto primaryScene = parent_->GetParentManager()->GetPrimaryScene().get();
-				auto taskStageLoad = shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene));
-				primaryScene->AddTask(taskStageLoad);
+				auto rearScene = parent_->GetParentManager()->GetRearScene().get();
+
+				primaryScene->AddTask(new Stage_SceneLoader(primaryScene));
+				rearScene->AddTask(new UtilTask_ColorFade(rearScene, 30, 30, 70, D3DCOLOR_XRGB(0, 0, 0)));
 			}
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Cancel) == KeyState::Push) {
@@ -365,8 +358,7 @@ void Menu_Child_RankMenu::Update() {
 
 			frameEnd_ = 0;
 
-			auto taskMenu = std::make_shared<Menu_Child_ParentMenu>((Menu_MainScene*)parent_);
-			parent_->AddTask(taskMenu);
+			parent_->AddTask(new Menu_Child_ParentMenu((Menu_MainScene*)parent_));
 		}
 
 		if (selectIndex_ < 0)
@@ -411,18 +403,15 @@ Menu_MainScene::Menu_MainScene(SceneManager* manager) : Scene(manager) {
 		objBackground_.SetScale(1.5, 1.5, 1);
 		objBackground_.SetAlpha(0);
 	}
-	{
-		auto taskMenu = std::make_shared<Menu_Child_ParentMenu>(this);
-		this->AddTask(taskMenu);
-	}
+
+	this->AddTask(new Menu_Child_ParentMenu(this));
 
 	bAutoDelete_ = true;
 }
 Menu_MainScene::~Menu_MainScene() {
 	auto primaryScene = manager_->GetPrimaryScene();
-	primaryScene->AddTask(std::shared_ptr<UtilTask_FadeBGM>(
-		new UtilTask_FadeBGM(primaryScene.get(), musicBackground_, 60, 
-			musicBackground_->GetData()->GetVolumeRate())));
+	primaryScene->AddTask(new UtilTask_FadeBGM(primaryScene.get(), musicBackground_, 60, 
+			musicBackground_->GetData()->GetVolumeRate()));
 }
 void Menu_MainScene::Render() {
 	{

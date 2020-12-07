@@ -82,6 +82,8 @@ public:
 
 	Type GetTextureType() { return typeTexture_; }
 	D3DXIMAGE_INFO* GetImageInfo() { return &infoImage_; }
+	UINT GetWidth() { return infoImage_.Width; }
+	UINT GetHeight() { return infoImage_.Height; }
 
 	IDirect3DTexture9* GetTexture() { return texture_; }
 	IDirect3DSurface9* GetSurface() { return surface_; }

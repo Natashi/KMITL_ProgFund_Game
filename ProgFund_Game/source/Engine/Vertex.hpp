@@ -7,14 +7,14 @@
 class VertexTLX {
 public:
 	static const D3DVERTEXELEMENT9 VertexLayout[];
-	static const D3DVERTEXELEMENT9 VertexLayoutFlipped[];
+	static const D3DVERTEXELEMENT9 VertexLayoutInstanced[];
 	static const size_t LayoutSize;
 	static const DWORD VertexFormat;
 public:
 	D3DXVECTOR3 position;
 	D3DCOLOR diffuse;
 	D3DXVECTOR2 texcoord;
-
+public:
 	VertexTLX() : position(0, 0, 0), texcoord(0, 0), diffuse(0xffffffff) {}
 	VertexTLX(const D3DXVECTOR3& pos) : 
 		position(pos), texcoord(0, 0), diffuse(0xffffffff) {
@@ -30,6 +30,17 @@ public:
 		position.x += bias;
 		position.y += bias;
 	}
+};
+class InstanceData {
+public:
+	D3DCOLOR diffuse_color;
+	D3DXVECTOR4 vec4a;
+	D3DXVECTOR4 vec4b;
+	D3DXVECTOR4 vec4c;
+public:
+	InstanceData() : diffuse_color(0xffffffff), vec4a(0, 0, 0, 0), vec4b(0, 0, 0, 0), vec4c(0, 0, 0, 0) {}
+	InstanceData(D3DCOLOR col, CD3DXVECTOR4 va, CD3DXVECTOR4 vb, CD3DXVECTOR4 vc) :
+		diffuse_color(col), vec4a(va), vec4b(vb), vec4c(vc) {}
 };
 
 struct BufferLockParameter {
@@ -133,9 +144,11 @@ public:
 
 	IDirect3DVertexDeclaration9* GetDeclaration(size_t index) { return listDeclaration_[index]; }
 	IDirect3DVertexDeclaration9* GetDeclarationTLX() { return GetDeclaration(0); }
+	IDirect3DVertexDeclaration9* GetDeclarationTLX_Instance() { return GetDeclaration(1); }
 
 	DxVertexBuffer* GetDynamicVertexBuffer(size_t index) { return listBufferDynamicVertex_[index]; }
 	DxVertexBuffer* GetDynamicVertexBufferTLX() { return GetDynamicVertexBuffer(0); }
+	DxVertexBuffer* GetDynamicVertexBufferTLX_Instance() { return GetDynamicVertexBuffer(1); }
 	DxIndexBuffer* GetDynamicIndexBuffer() { return bufferDynamicIndex_; }
 private:
 	std::vector<IDirect3DVertexDeclaration9*> listDeclaration_;

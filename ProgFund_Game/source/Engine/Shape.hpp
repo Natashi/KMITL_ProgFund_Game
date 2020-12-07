@@ -37,8 +37,7 @@ public:
 	}
 
 	template<typename L> inline DxRectangle<L> NewAs() {
-		DxRectangle<L> res = DxRectangle<L>((L)left, (L)top,
-			(L)right, (L)bottom);
+		DxRectangle<L> res((L)left, (L)top, (L)right, (L)bottom);
 		return res;
 	}
 	inline void Set(T l, T t, T r, T b) {
@@ -54,8 +53,12 @@ public:
 		int ih = (id / ict) * ht + oy;
 		return SetFromSize(iw, ih, wd, ht);
 	}
-	static inline DxRectangle<T> SetFromSize(T wd, T ht) {
-		return DxRectangle<T>(wd, ht, wd, ht);
+
+	static inline DxRectangle<T> SetFromSize(T x, T y) {
+		return DxRectangle<T>(x, y, x, y);
+	}
+	static inline DxRectangle<T> SetFromSize(const D3DXVECTOR2& vec) {
+		return SetFromSize(vec.x, vec.y);
 	}
 	static inline DxRectangle<T> SetFromSize(T x, T y, T wd, T ht) {
 		return DxRectangle<T>(x, y, x + wd, y + ht);

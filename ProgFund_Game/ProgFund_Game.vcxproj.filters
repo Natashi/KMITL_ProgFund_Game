@@ -19,6 +19,9 @@
     <Filter Include="Header Files\Game">
       <UniqueIdentifier>{77b09b42-2e9e-4af6-b2b9-403c7e4dd99c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game\Stage1">
+      <UniqueIdentifier>{c696483e-6500-4d7f-8ba9-a153c0f0984e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -71,6 +74,12 @@
     </ClCompile>
     <ClCompile Include="source\Game\Intersection.cpp">
       <Filter>Header Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Game\Enemy.cpp">
+      <Filter>Header Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Game\Stage\BossMain.cpp">
+      <Filter>Header Files\Game\Stage1</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +148,15 @@
     </ClInclude>
     <ClInclude Include="source\Game\Intersection.hpp">
       <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Game\Enemy.hpp">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Game\Stage\BossMain.hpp">
+      <Filter>Header Files\Game\Stage1</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Engine\PointerExtensions.hpp">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -40,11 +40,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		printf("Initialized application.\n");
 
 		{
-			/*
-			shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
-			menuScene->SetType(Scene::Type::Menu);
-			sceneManager->AddScene(menuScene, Scene::Type::Menu);
-			*/
+			
+			//shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
+			//menuScene->SetType(Scene::Type::Menu);
+			//sceneManager->AddScene(menuScene, Scene::Type::Menu);
+			
 			auto primaryScene = sceneManager->GetPrimaryScene();
 			auto taskStageLoad = shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene.get()));
 			primaryScene->AddTask(taskStageLoad);

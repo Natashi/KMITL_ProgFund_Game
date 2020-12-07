@@ -9,8 +9,13 @@
 Stage_ShotManager::Stage_ShotManager(Scene* parent) : TaskBase(parent) {
 	GET_INSTANCE(ResourceManager, resourceManager);
 
-	shaderLayer_ = resourceManager->LoadResource<ShaderResource>(
-		"resource/shader/default_2d_layer.fx", "shader/default_2d_layer.fx");
+	resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_shotbreak.png", "img/stage/eff_shotbreak.png");
+
+	//---------------------------------------------------------------------
+
+	shaderLayer_ = resourceManager->LoadResource<ShaderResource>("resource/shader/layer_shot.fx", "shader/layer_shot.fx");
+
+	resourceManager->LoadResource<ShaderResource>("resource/shader/instanced_shotbreak.fx", "shader/instanced_shotbreak.fx");
 }
 Stage_ShotManager::~Stage_ShotManager() {
 	for (auto itr = mapShotDataEnemy_.begin(); itr != mapShotDataEnemy_.end(); ++itr)
@@ -247,8 +252,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 		auto& texture = pShotData->texture_;
 		auto& listFrame = pShotData->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
-			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
-			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
+			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(texture->GetWidth(), texture->GetHeight());
 			if (iFrame == 0) {
 				pShotData->width_ = listFrame[iFrame].rcDst.GetWidth();
 				pShotData->height_ = listFrame[iFrame].rcDst.GetHeight();
@@ -375,7 +379,7 @@ void Stage_ShotManager::LoadPlayerShotData() {
 		auto& listFrame = pShotData->listFrameData_;
 		for (size_t iFrame = 0; iFrame < listFrame.size(); ++iFrame) {
 			D3DXIMAGE_INFO* imgInfo = texture->GetImageInfo();
-			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(imgInfo->Width, imgInfo->Height);
+			listFrame[iFrame].rcSrc /= DxRectangle<float>::SetFromSize(texture->GetWidth(), texture->GetHeight());
 			if (iFrame == 0) {
 				pShotData->width_ = listFrame[iFrame].rcDst.GetWidth();
 				pShotData->height_ = listFrame[iFrame].rcDst.GetHeight();
@@ -404,16 +408,6 @@ Stage_ShotAnimation* Stage_ShotManager::GetPlayerShotData(int id) {
 	return itr->second;
 }
 
-void Stage_ShotManager::AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
-	obj->typeOwner_ = ShotOwnerType::Enemy;
-	obj->polarity_ = polarity;
-	listShotEnemy_.push_back(obj);
-}
-void Stage_ShotManager::AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
-	obj->typeOwner_ = ShotOwnerType::Player;
-	obj->polarity_ = polarity;
-	listShotPlayer_.push_back(obj);
-}
 shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(ShotOwnerType typeOwner, CD3DXVECTOR2 pos, 
 	double speed, double angle, int graphic, size_t delay) 
 {
@@ -428,6 +422,36 @@ shared_ptr<Stage_ObjShot> Stage_ShotManager::CreateShotA1(ShotOwnerType typeOwne
 	nShot->frameDelay_ = delay;
 	nShot->frameDelayMax_ = delay;
 	return nShot;
+}
+void Stage_ShotManager::AddEnemyShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
+	if (listShotEnemy_.size() >= 8192) return;
+	obj->typeOwner_ = ShotOwnerType::Enemy;
+	obj->polarity_ = polarity;
+	listShotEnemy_.push_back(obj);
+}
+shared_ptr<Stage_ObjShot> Stage_ShotManager::AddEnemyShot(CD3DXVECTOR2 pos, double speed, double angle,
+	int graphic, size_t delay, IntersectPolarity polarity)
+{
+	shared_ptr<Stage_ObjShot> shot = this->CreateShotA1(ShotOwnerType::Enemy, pos, speed, angle, graphic, delay);
+	shot->polarity_ = polarity;
+	if (listShotEnemy_.size() < 8192)
+		listShotEnemy_.push_back(shot);
+	return shot;
+}
+void Stage_ShotManager::AddPlayerShot(shared_ptr<Stage_ObjShot> obj, IntersectPolarity polarity) {
+	if (listShotPlayer_.size() >= 1024) return;
+	obj->typeOwner_ = ShotOwnerType::Player;
+	obj->polarity_ = polarity;
+	listShotPlayer_.push_back(obj);
+}
+shared_ptr<Stage_ObjShot> Stage_ShotManager::AddPlayerShot(CD3DXVECTOR2 pos, double speed, double angle,
+	int graphic, size_t delay, IntersectPolarity polarity)
+{
+	shared_ptr<Stage_ObjShot> shot = this->CreateShotA1(ShotOwnerType::Player, pos, speed, angle, graphic, delay);
+	shot->polarity_ = polarity;
+	if (listShotPlayer_.size() < 1024)
+		listShotPlayer_.push_back(shot);
+	return shot;
 }
 
 void Stage_ShotManager::Render(byte layer) {
@@ -474,7 +498,7 @@ void Stage_ShotManager::Render(byte layer) {
 						if (itrBlend->second->countRenderIndex_ < 3) continue;
 
 						window->SetBlendMode(itrBlend->first);
-						itrBlend->second->Render(this);
+						itrBlend->second->Render();
 					}
 					effect->EndPass();
 				}
@@ -520,7 +544,7 @@ Stage_ShotRenderer::Stage_ShotRenderer() {
 	index_.resize(countMaxIndex_);
 }
 
-HRESULT Stage_ShotRenderer::Render(Stage_ShotManager* manager) {
+HRESULT Stage_ShotRenderer::Render() {
 	//if (countRenderIndex_ < 3) return E_FAIL;
 
 	WindowMain* window = WindowMain::GetBase();
@@ -606,8 +630,8 @@ Stage_ShotAnimation::Stage_ShotAnimation(shared_ptr<TextureResource> texture, do
 	pDelayData_ = nullptr;
 
 	texture_ = texture;
-	width_ = texture_->GetImageInfo()->Width;
-	height_ = texture_->GetImageInfo()->Height;
+	width_ = texture_->GetWidth();
+	height_ = texture_->GetHeight();
 
 	spin_ = Math::DegreeToRadian(spin);
 	bFixedAngle_ = fixedAngle;
@@ -775,23 +799,6 @@ HRESULT Stage_ObjShot::Render() {
 	}
 
 	D3DXVECTOR4 colorCopy = color_;
-	/*
-	switch (blend_) {
-	case BlendMode::Subtract:
-	case BlendMode::RevSubtract:
-	case BlendMode::Invert:
-	{
-		float rate = ColorUtility::ClampRet(alpha) / 255.0f;;
-		colorCopy.x *= rate;
-		colorCopy.y *= rate;
-		colorCopy.z *= rate;
-		break;
-	}
-	default:
-		colorCopy.w *= ColorUtility::ClampRet(alpha) / 255.0f;
-		break;
-	}
-	*/
 	colorCopy.w *= ColorUtility::ClampRet(alpha) / 255.0f;
 
 	D3DCOLOR color = ColorUtility::VectorToD3DColor(colorCopy);
@@ -870,7 +877,7 @@ void Stage_ObjShot::_RegistIntersection() {
 		pTargetCircle->SetIntersectionSpace();
 
 		auto intersectionManager = ((Stage_MainScene*)shotManager_->GetParent())->GetIntersectionManager();
-		intersectionManager->AddTarget(pIntersectionTarget_);
+		intersectionManager->AddTarget(pIntersectionTarget_->GetTargetType(), pIntersectionTarget_);
 	}
 }
 
@@ -893,8 +900,103 @@ void Stage_ObjShot::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, sh
 		break;
 	case Stage_IntersectionTarget::TypeTarget::PlayerSpell:
 		break;
-	case Stage_IntersectionTarget::TypeTarget::Enemy:
+	case Stage_IntersectionTarget::TypeTarget::EnemyToPlayerShot:
 		life_ -= 1;
 		break;
 	}
+}
+
+//*******************************************************************
+//Stage_ShotManager
+//*******************************************************************
+Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* parent) : TaskBase(parent) {
+	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
+
+	GET_INSTANCE(ResourceManager, resourceManager);
+	texture_ = resourceManager->GetResourceAs<TextureResource>("img/player/eff_shotbreak.png");
+	shader_ = resourceManager->GetResourceAs<ShaderResource>("shader/instanced_shotbreak.fx");
+
+	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, 0));
+	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, 0));
+
+	bufferVertex_->Create(4U, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
+	DWORD fmt = D3DFMT_INDEX16;
+	bufferIndex_->Create(4U, sizeof(uint16_t), D3DPOOL_MANAGED, &fmt);
+
+	vecRenderParticle_.resize(8192);
+	countRender_ = 0;
+
+	{
+		std::vector<VertexTLX> vertex(4U);
+
+		float width = texture_->GetWidth();
+		float height = texture_->GetHeight();
+		vertex[0] = VertexTLX(D3DXVECTOR3(-16, -16, 1), D3DXVECTOR2(0, 0));
+		vertex[1] = VertexTLX(D3DXVECTOR3(16, -16, 1), D3DXVECTOR2(32 / width, 0));
+		vertex[2] = VertexTLX(D3DXVECTOR3(-16, 16, 1), D3DXVECTOR2(0, 32 / height));
+		vertex[3] = VertexTLX(D3DXVECTOR3(16, 16, 1), D3DXVECTOR2(32 / width, 32 / height));
+		for (int i = 0; i < 4; ++i)
+			vertex[i].Bias(-0.5f);
+
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(vertex, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
+		bufferVertex_->UpdateBuffer(&lockParam);
+	}
+	{
+		std::vector<uint16_t> index = { 0, 1, 2, 3 };
+
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(index, DX_MAX_BUFFER_SIZE, sizeof(uint16_t));
+		bufferIndex_->UpdateBuffer(&lockParam);
+	}
+}
+
+void Stage_ShotDeleteEffectRendererTask::Render(byte layer) {
+	if (layer != LAYER_SHOT - 1) return;
+
+	WindowMain* window = WindowMain::GetBase();
+	IDirect3DDevice9* device = window->GetDevice();
+
+	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+	window->SetBlendMode(BlendMode::Add);
+}
+void Stage_ShotDeleteEffectRendererTask::Update() {
+	countRender_ = 0;
+	for (auto itr = listParticle_.begin(); itr != listParticle_.end();) {
+		ParticleData*& pData = (*itr);
+		if (pData->life > FRAME_PER_STEP * 8) {
+			ptr_delete(pData);
+			itr = listParticle_.erase(itr);
+		}
+		else {
+			pData->pos += pData->move;
+
+			memcpy(&vecRenderParticle_[countRender_], pData, sizeof(ParticleData));
+			++countRender_;
+
+			++(pData->life);
+			++itr;
+		}
+	}
+}
+
+void Stage_ShotDeleteEffectRendererTask::AddInstance(Stage_ObjShot* shot) {
+	if (listParticle_.size() == 8192) return;
+	ParticleData* newData = new ParticleData();
+	newData->pos = shot->GetMovePosition();
+	newData->move = D3DXVECTOR2(0, 0);
+	if (auto pattern = shot->GetPattern().get()) {
+		newData->move = D3DXVECTOR2(pattern->GetSpeedX(), pattern->GetSpeedY());
+	}
+	{
+		float zAng = RandProvider::GetBase()->GetReal(0, GM_PI_X2);
+		newData->angle = D3DXVECTOR2(sinf(zAng), cosf(zAng));
+	}
+	newData->scale = 1;
+	if (auto shotData = shot->GetShotData()) {
+		constexpr float breakSize = 32;
+		newData->scale = breakSize / ((shotData->GetWidth() + shotData->GetHeight()) / 2.0f);
+	}
+	newData->life = 0;
+	listParticle_.push_back(newData);
 }

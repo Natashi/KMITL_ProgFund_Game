@@ -8,13 +8,27 @@
 Stage_ObjMove::Stage_ObjMove() {
 	posX_ = 0;
 	posY_ = 0;
+
+	frameObjMove_ = 0;
 	bEnableMove_ = true;
 }
 
 void Stage_ObjMove::_Move() {
 	if (pattern_ == nullptr || !bEnableMove_) return;
 
+	if (mapWaitPattern_.size() > 0) {
+		auto itrFirst = mapWaitPattern_.begin();
+		while (frameObjMove_ >= itrFirst->first) {
+			if (pattern_ != nullptr)
+				itrFirst->second->_Activate(pattern_.get());
+			pattern_ = itrFirst->second;
+
+			mapWaitPattern_.erase(itrFirst);
+		}
+	}
+
 	pattern_->Move();
+	++frameObjMove_;
 }
 
 double Stage_ObjMove::GetSpeed() {
@@ -166,6 +180,138 @@ void Stage_MovePatternXY::Move() {
 
 	moveTarget_->posX_ += c_;
 	moveTarget_->posY_ += s_;
+
+	++framePattern_;
+}
+
+//*******************************************************************
+//Stage_MovePatternLine
+//*******************************************************************
+Stage_MovePatternLine::Stage_MovePatternLine(Stage_ObjMove* target) : Stage_MovePattern(target) {
+	typePattern_ = Type::Line;
+
+	typeLine_ = TypeLine::None;
+	frameLineMax_ = 1;
+
+	speed_ = 0;
+	angDirection_ = 0;
+
+	ZeroMemory(posIni_, sizeof(posIni_));
+	ZeroMemory(posTarget_, sizeof(posTarget_));
+}
+void Stage_MovePatternLine::Move() {
+	if (framePattern_ < frameLineMax_) {
+		moveTarget_->posX_ += c_ * speed_;
+		moveTarget_->posY_ += s_ * speed_;
+	}
+	else {
+		speed_ = 0;
+	}
+
+	++framePattern_;
+}
+
+//*******************************************************************
+//Stage_MovePatternLine_Speed
+//*******************************************************************
+Stage_MovePatternLine_Speed::Stage_MovePatternLine_Speed(Stage_ObjMove* target) : Stage_MovePatternLine(target) {
+	typeLine_ = TypeLine::Speed;
+}
+
+void Stage_MovePatternLine_Speed::SetAtSpeed(double tx, double ty, double speed) {
+	posIni_[0] = moveTarget_->posX_;
+	posIni_[1] = moveTarget_->posY_;
+	posTarget_[0] = tx;
+	posTarget_[1] = ty;
+
+	double dx = posTarget_[0] - posIni_[0];
+	double dy = posTarget_[1] - posIni_[1];
+	double dist = hypot(dx, dy);
+
+	angDirection_ = atan2(dy, dx);
+	frameLineMax_ = std::trunc(dist / speed + 0.001);
+	speed_ = dist / frameLineMax_;	//Speed correction to reach the destination in integer frames
+
+	c_ = dx / dist;
+	s_ = dy / dist;
+}
+
+//*******************************************************************
+//Stage_MovePatternLine_Frame
+//*******************************************************************
+Stage_MovePatternLine_Frame::Stage_MovePatternLine_Frame(Stage_ObjMove* target) : Stage_MovePatternLine(target) {
+	typeLine_ = TypeLine::Frame;
+
+	speedRateBase_ = 0;
+
+	ZeroMemory(posDiff_, sizeof(posDiff_));
+}
+
+void Stage_MovePatternLine_Frame::SetAtFrame(double tx, double ty, size_t frame, Math::Lerp::Type typeLerp) {
+	lerp_func funcLerp;
+	lerp_diff_func funcLerpDiff;
+	switch (typeLerp) {
+	case Math::Lerp::MODE_SMOOTH:
+		funcLerp = Math::Lerp::Smooth<double, double>;
+		funcLerpDiff = Math::Lerp::DifferentiateSmooth<double>;
+		break;
+	case Math::Lerp::MODE_SMOOTHER:
+		funcLerp = Math::Lerp::Smoother<double, double>;
+		funcLerpDiff = Math::Lerp::DifferentiateSmoother<double>;
+		break;
+	case Math::Lerp::MODE_ACCELERATE:
+		funcLerp = Math::Lerp::Accelerate<double, double>;
+		funcLerpDiff = Math::Lerp::DifferentiateAccelerate<double>;
+		break;
+	case Math::Lerp::MODE_DECELERATE:
+		funcLerp = Math::Lerp::Decelerate<double, double>;
+		funcLerpDiff = Math::Lerp::DifferentiateDecelerate<double>;
+		break;
+	case Math::Lerp::MODE_LINEAR:
+	default:
+		funcLerp = Math::Lerp::Linear<double, double>;
+		funcLerpDiff = Math::Lerp::DifferentiateLinear<double>;
+		break;
+	}
+	SetAtFrame(tx, ty, frame, funcLerp, funcLerpDiff);
+}
+void Stage_MovePatternLine_Frame::SetAtFrame(double tx, double ty, size_t frame, lerp_func lerpFunc, lerp_diff_func lerpDiffFunc) {
+	posIni_[0] = moveTarget_->posX_;
+	posIni_[1] = moveTarget_->posY_;
+	posTarget_[0] = tx;
+	posTarget_[1] = ty;
+
+	funcMove_ = lerpFunc;
+	funcSpeedDiff_ = lerpDiffFunc;
+
+	frameLineMax_ = std::max(1U, frame);
+
+	posDiff_[0] = posTarget_[0] - posIni_[0];
+	posDiff_[1] = posTarget_[1] - posIni_[1];
+
+	angDirection_ = atan2(posDiff_[1], posDiff_[0]);
+
+	double dist = hypot(posDiff_[0], posDiff_[1]);
+	speedRateBase_ = dist / frameLineMax_;
+
+	speed_ = speedRateBase_ * funcSpeedDiff_(0);
+	
+	c_ = posDiff_[0] / dist;
+	s_ = posDiff_[1] / dist;
+}
+
+void Stage_MovePatternLine_Frame::Move() {
+	if (framePattern_ < frameLineMax_) {
+		double rLine = frameLineMax_ > 1U ? (framePattern_ / (double)(frameLineMax_ - 1)) : 1.0;
+
+		moveTarget_->posX_ = funcMove_(posIni_[0], posTarget_[0], rLine);
+		moveTarget_->posY_ = funcMove_(posIni_[1], posTarget_[1], rLine);
+
+		speed_ = speedRateBase_ * funcSpeedDiff_(rLine);
+	}
+	else {
+		speed_ = 0;
+	}
 
 	++framePattern_;
 }

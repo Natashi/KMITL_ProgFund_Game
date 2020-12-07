@@ -5,6 +5,8 @@
 #include "Player.hpp"
 #include "Shot.hpp"
 
+#include "Stage/BossMain.hpp"
+
 //*******************************************************************
 //Stage_SceneLoader
 //*******************************************************************
@@ -16,34 +18,27 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 	{
 		GET_INSTANCE(ResourceManager, resourceManager);
 
+		//System
+		SystemUtility::LoadSystemResources();
+
 		//Stage UI
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/stage/stg_frame.png", "img/stage/stg_frame.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/stg_frame.png", "img/stage/stg_frame.png");
 
 		//Stage main
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/stage/eff_aura.png", "img/stage/eff_aura.png");
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/stage/eff_magicsquare.png", "img/stage/eff_magicsquare.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_aura.png", "img/stage/eff_aura.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_magicsquare.png", "img/stage/eff_magicsquare.png");
 
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/stage/dot_shinki.png", "img/stage/dot_shinki.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/dot_shinki.png", "img/stage/dot_shinki.png");
 
 		//Player
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/eff_base.png", "img/player/eff_base.png");
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/eff_dead.png", "img/player/eff_dead.png");
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/eff_sloweffect.png", "img/player/eff_sloweffect.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_base.png", "img/player/eff_base.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_dead.png", "img/player/eff_dead.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_sloweffect.png", "img/player/eff_sloweffect.png");
 
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/pl00.png", "img/player/pl00.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/pl00.png", "img/player/pl00.png");
 
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/eff_ring.png", "img/player/eff_ring.png");
-		resourceManager->LoadResource<TextureResource>(
-			"resource/img/player/eff_burst.png", "img/player/eff_burst.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_ring.png", "img/player/eff_ring.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_burst.png", "img/player/eff_burst.png");
 	}
 }
 Stage_SceneLoader::~Stage_SceneLoader() {
@@ -67,17 +62,157 @@ void Stage_SceneLoader::Update() {
 //*******************************************************************
 //Stage_MainSceneUI
 //*******************************************************************
+class StageUI_Score : public TaskBase {
+	friend class Stage_MainSceneUI;
+private:
+	static constexpr const size_t COUNT_SCORE_DIGIT = 12U;
+	static constexpr const size_t COUNT_SCORE_COMMA = (COUNT_SCORE_DIGIT - 1U) / 3U;
+	static constexpr const size_t COUNT_SCORE_RENDER = COUNT_SCORE_DIGIT + COUNT_SCORE_COMMA;
+
+	StaticRenderObject2D objScoreText_;
+	DynamicRenderObject2D objScore_;
+	D3DXVECTOR2 sizeAscii_;
+	D3DXVECTOR2 sizeDigit_;
+public:
+	StageUI_Score(Scene* parent) : TaskBase(parent) {
+		GET_INSTANCE(ResourceManager, resourceManager);
+
+		auto textureAscii = resourceManager->GetResourceAs<TextureResource>("img/system/ascii.png");
+		sizeAscii_ = D3DXVECTOR2(textureAscii->GetImageInfo()->Width, textureAscii->GetImageInfo()->Height);
+
+		{
+			objScoreText_.SetTexture(textureAscii);
+
+			{
+				std::string strText = "Score: ";
+				std::vector<VertexTLX> vertex(strText.size() * 4U);
+				std::vector<uint16_t> index(strText.size() * 6U);
+
+				DxRectangle<int> rcBaseDst(0, 0, 16, 16);
+				constexpr int xInc = 11;
+
+				VertexTLX verts[4];
+				for (size_t i = 0; i < strText.size(); ++i) {
+					SystemUtility::SetVertexAsciiSingle(verts, strText[i], rcBaseDst, D3DXVECTOR2(14, 14), sizeAscii_);
+
+					uint16_t biv = i * 4;
+					uint16_t bii = i * 6;
+					vertex[biv + 0] = verts[0]; vertex[biv + 1] = verts[1];
+					vertex[biv + 2] = verts[2]; vertex[biv + 3] = verts[3];
+					index[bii + 0] = biv + 0; index[bii + 1] = biv + 1; index[bii + 2] = biv + 2;
+					index[bii + 3] = biv + 2; index[bii + 4] = biv + 1; index[bii + 5] = biv + 3;
+
+					rcBaseDst += DxRectangle<int>::SetFromSize(xInc, 0);
+				}
+
+				objScoreText_.SetArrayVertex(vertex);
+				objScoreText_.SetArrayIndex(index);
+
+				objScoreText_.SetPosition(128 + 6, 0 + 2, 1);
+			}
+		}
+
+		auto textureDigit = resourceManager->GetResourceAs<TextureResource>("img/system/sys_digit.png");
+		sizeDigit_ = D3DXVECTOR2(textureDigit->GetImageInfo()->Width, textureDigit->GetImageInfo()->Height);
+
+		objScore_.SetTexture(textureDigit);
+		objScore_.SetPosition(224, 0, 1);
+		{
+			std::vector<uint16_t> index(COUNT_SCORE_RENDER * 6U);
+			for (size_t i = 0; i < COUNT_SCORE_RENDER; ++i) {
+				uint16_t biv = i * 4;
+				uint16_t bii = i * 6;
+				index[bii + 0] = biv + 0; index[bii + 1] = biv + 1; index[bii + 2] = biv + 2;
+				index[bii + 3] = biv + 2; index[bii + 4] = biv + 1; index[bii + 5] = biv + 3;
+			}
+			objScore_.SetArrayIndex(index);
+		}
+	}
+
+	virtual void Render(byte layer) {
+		if (layer != 0) return;
+		objScoreText_.Render();
+		objScore_.Render();
+	}
+	virtual void Update() {
+		shared_ptr<Stage_MainScene> stageScene = parent_->GetParentManager()->GetSceneAs<Stage_MainScene>(Scene::Stage);
+
+		shared_ptr<Stage_PlayerTask> pTaskPlayer = stageScene->GetPlayer();
+		PlayerData* playerData = pTaskPlayer->GetPlayerData();
+
+		{
+			int listDigits[COUNT_SCORE_DIGIT];
+
+			{
+				static std::unique_ptr<uint64_t> scoreMax = nullptr;
+				if (scoreMax == nullptr) {
+					uint64_t score = 1ui64;
+					for (size_t i = 0; i < COUNT_SCORE_DIGIT; ++i)
+						score *= 10ui64;
+					scoreMax = std::unique_ptr<uint64_t>(new uint64_t(score));
+				}
+
+				uint64_t tScore = std::min(playerData->stat.score, *scoreMax);
+				for (size_t i = 0; i < COUNT_SCORE_DIGIT; ++i) {
+					listDigits[COUNT_SCORE_DIGIT - i - 1] = tScore % 10;
+					tScore /= 10;
+				}
+			}
+
+			std::vector<int> listDigitsRender(COUNT_SCORE_RENDER);
+			{
+				size_t iList = COUNT_SCORE_RENDER - 1;
+				size_t iDigit = 0;
+				while (true) {
+					listDigitsRender[iList--] = listDigits[COUNT_SCORE_DIGIT - iDigit - 1];
+
+					++iDigit;
+					if (iDigit >= COUNT_SCORE_DIGIT) break;
+
+					//Add comma
+					if (iDigit % 3 == 0)
+						listDigitsRender[iList--] = 12;
+				}
+			}
+
+			{
+				std::vector<VertexTLX> vertex(listDigitsRender.size() * 4U);
+
+				DxRectangle<int> rcBaseDst(0, 0, 16, 20);
+
+				VertexTLX verts[4];
+				for (size_t i = 0; i < listDigitsRender.size(); ++i) {
+					int iChar = listDigitsRender[i];
+					bool bComma = iChar >= 10;
+
+					DxRectangle<int> rcChar = DxRectangle<int>::SetFromIndex(16, 24, iChar, 20);
+
+					SystemUtility::SetVertexAsciiSingle(verts, rcChar, 
+						rcBaseDst + DxRectangle<int>::SetFromSize(bComma ? -5 : 0, 0), sizeDigit_);
+					memcpy(vertex.data() + i * 4U, verts, sizeof(verts));
+
+					rcBaseDst += DxRectangle<int>::SetFromSize(bComma ? 4 : 14, 0);
+				}
+
+				objScore_.SetArrayVertex(vertex);
+			}
+		}
+	}
+};
+
 Stage_MainSceneUI::Stage_MainSceneUI(SceneManager* manager) : Scene(manager) {
 	GET_INSTANCE(ResourceManager, resourceManager);
 
 	{
 		auto textureFrame = resourceManager->GetResourceAs<TextureResource>("img/stage/stg_frame.png");
 		objFrame_.SetTexture(textureFrame);
-		objFrame_.SetSourceRect(DxRectangle(0, 0, 640, 480) - 1);
+		objFrame_.SetSourceRect(DxRectangle(0, 0, 640, 480));
 		objFrame_.SetDestRect(DxRectangle(0, 0, 640, 480));
 		objFrame_.UpdateVertexBuffer();
 	}
 	objFrame_.SetBlendType(BlendMode::Invert);
+
+	this->AddTask(std::make_shared<StageUI_Score>(this));
 
 	bAutoDelete_ = false;
 }
@@ -184,8 +319,8 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	}
 
 	{
-		auto pTaskTest = std::make_shared<Stage_ShotTest>(this);
-		this->AddTask(pTaskTest);
+		//auto pTaskTest = std::make_shared<Stage_ShotTest>(this);
+		//this->AddTask(pTaskTest);
 	}
 
 	bAutoDelete_ = false;
@@ -197,5 +332,11 @@ void Stage_MainScene::Render() {
 	Scene::Render();
 }
 void Stage_MainScene::Update() {
+	if (frame_ == 120) {
+		auto pBossTask = shared_ptr<EnemyBoss_Shinki>(new EnemyBoss_Shinki(this));
+		pBossTask->pOwnRefWeak_ = pBossTask;
+		this->AddTask(pBossTask);
+	}
+
 	Scene::Update();
 }

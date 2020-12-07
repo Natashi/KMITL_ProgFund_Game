@@ -2,6 +2,7 @@
 
 #include "../../pch.h"
 
+#include "PointerExtensions.hpp"
 #include "VectorExtensions.hpp"
 #include "Shape.hpp"
 #include "Table.hpp"
@@ -142,6 +143,27 @@ public:
 		template<typename T, typename L>
 		static inline T Decelerate(T a, T b, L x) {
 			return a + ((L)1 - ((L)1 - x) * ((L)1 - x)) * (b - a);
+		}
+
+		template<typename T>
+		static inline T DifferentiateLinear(T x) {
+			return (T)1;
+		}
+		template<typename T>
+		static inline T DifferentiateSmooth(T x) {
+			return (T)6 * x * ((T)1 - x);
+		}
+		template<typename T>
+		static inline T DifferentiateSmoother(T x) {
+			return (T)30 * x * x * (x * x - (T)2 * x + (T)1);
+		}
+		template<typename T>
+		static inline T DifferentiateAccelerate(T x) {
+			return (T)2 * x;
+		}
+		template<typename T>
+		static inline T DifferentiateDecelerate(T x) {
+			return (T)2 * ((T)1 - x);
 		}
 	};
 };

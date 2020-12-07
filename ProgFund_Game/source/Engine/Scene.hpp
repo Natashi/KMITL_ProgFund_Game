@@ -96,6 +96,10 @@ public:
 	void Render();
 	void Update();
 
+	shared_ptr<Scene> GetScene(size_t indexScene) { return listScene_[indexScene]; }
+	template<class T2> shared_ptr<T2> GetSceneAs(size_t indexScene) { 
+		return std::dynamic_pointer_cast<T2>(listScene_[indexScene]); 
+	}
 	shared_ptr<Scene> GetPrimaryScene() { return primaryScene_; }
 	shared_ptr<Scene> GetRearScene() { return rearScene_; }
 

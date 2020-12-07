@@ -2,6 +2,7 @@
 #include "../../pch.h"
 
 #include "System.hpp"
+#include "ObjMove.hpp"
 #include "Intersection.hpp"
 
 class Stage_MainScene;
@@ -9,7 +10,23 @@ class Stage_MainScene;
 class Player_HitboxTask;
 class Player_BarrierTask;
 class Player_OptionTask;
-class Stage_PlayerTask : public TaskBase, public Stage_ObjCollision {
+
+struct PlayerStats {
+	uint64_t score = 0;
+	uint32_t totalAbsorb = 0;
+	uint32_t maxAbsorb = 0;
+};
+struct PlayerData {
+	PlayerStats stat;
+
+	size_t countAbsorb = 0;
+	double scoreMultiplier = 1;	//Score multiplier
+
+	int life = 2;				//Remaining extra lives
+	float specialCharge = 0;	//Gauge for special attack
+};
+
+class Stage_PlayerTask : public TaskBase, public Stage_ObjMove, public Stage_ObjCollision {
 	friend class Stage_MainScene;
 public:
 	static constexpr const double SPEED_FAST = 4;		//Unfocused move speed
@@ -30,6 +47,8 @@ public:
 private:
 	weak_ptr<Stage_PlayerTask> pOwnRefWeak_;
 
+	PlayerData playerData_;
+
 	Sprite2D objSprite_;
 	int frameAnimLeft_;
 	int frameAnimRight_;
@@ -45,13 +64,9 @@ private:
 	shared_ptr<Player_OptionTask> taskOption_[2];
 	shared_ptr<Player_BarrierTask> taskBarrier_;
 
-	D3DXVECTOR2 playerPos_;
 	DxRectangle<int> rcClip_;
 
-	double moveAngle_;
-	double moveSpeed_;
-	double moveSpeedX_;
-	double moveSpeedY_;
+	Stage_MovePatternAngle* pPatternAngle_;
 
 	void _Move();
 	void _RunAnimation();
@@ -66,6 +81,8 @@ public:
 	virtual void Render(byte layer);
 	virtual void Update();
 
+	PlayerData* GetPlayerData() { return &playerData_; }
+
 	//-1.0 <-------- 0.0 --------> 1.0
 	//Black                      White
 	IntersectPolarity GetPolarity() { 
@@ -76,12 +93,6 @@ public:
 
 	bool IsInvincible() { return frameInvincibility_ > 0; }
 	bool IsFocus() { return bFocus_; }
-
-	float GetX() { return playerPos_.x; }
-	void SetX(float x) { playerPos_.x = x; }
-	float GetY() { return playerPos_.y; }
-	void SetY(float y) { playerPos_.y = y; }
-	D3DXVECTOR2& GetPosition() { return playerPos_; }
 
 	void SetClip(const DxRectangle<int>& clip) { rcClip_ = clip; }
 

@@ -13,10 +13,15 @@ const D3DVERTEXELEMENT9 VertexTLX::VertexLayout[] = {
 	{ 0, 16, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
 	D3DDECL_END()
 };
-const D3DVERTEXELEMENT9 VertexTLX::VertexLayoutFlipped[] = {
+const D3DVERTEXELEMENT9 VertexTLX::VertexLayoutInstanced[] = {
 	{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
 	{ 0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
 	{ 0, 20, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+
+	{ 1, 0, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1 },
+	{ 1, 4, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+	{ 1, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
+	{ 1, 36, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
 	D3DDECL_END()
 };
 const size_t VertexTLX::LayoutSize = 3U;
@@ -46,7 +51,7 @@ void VertexBufferManager::Initialize() {
 
 		std::vector<std::pair<const char*, const D3DVERTEXELEMENT9*>> listDeclParam = {
 			std::make_pair("TLX", VertexTLX::VertexLayout),
-			std::make_pair("TLX_F", VertexTLX::VertexLayoutFlipped),
+			std::make_pair("TLX_INSTANCED", VertexTLX::VertexLayoutInstanced),
 		};
 		for (auto& itr : listDeclParam) {
 			IDirect3DVertexDeclaration9* pDecl = nullptr;
@@ -81,6 +86,7 @@ void VertexBufferManager::CreateBuffers() {
 
 	std::vector<std::pair<const char*, std::pair<size_t, DWORD>>> listVertexParam = {
 		std::make_pair("TLX", std::make_pair(sizeof(VertexTLX), VertexTLX::VertexFormat)),
+		std::make_pair("INSTANCE_DATA", std::make_pair(sizeof(InstanceData), 0)),
 	};
 	for (auto& itr : listVertexParam) {
 		DxVertexBuffer* pBuffer = new DxVertexBuffer(device, D3DUSAGE_DYNAMIC);

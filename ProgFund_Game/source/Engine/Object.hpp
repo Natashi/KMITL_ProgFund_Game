@@ -113,9 +113,12 @@ public:
 		SetColor((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
 	}
 	virtual void SetColor(int r, int g, int b) {
-		color_.x = ColorUtility::ClampRet(r) / 255.0f;
-		color_.y = ColorUtility::ClampRet(g) / 255.0f;
-		color_.z = ColorUtility::ClampRet(b) / 255.0f;
+		SetColor(D3DXVECTOR3(ColorUtility::ClampRet(r), ColorUtility::ClampRet(g), ColorUtility::ClampRet(b)) / 255.0f);
+	}
+	virtual void SetColor(const D3DXVECTOR3& col) {
+		color_.x = col.x;
+		color_.y = col.y;
+		color_.z = col.z;
 	}
 	virtual void SetAlpha(int alpha) { color_.w = ColorUtility::ClampRet(alpha) / 255.0f; }
 	/*
@@ -151,7 +154,18 @@ public:
 	}
 };
 
-class StaticRenderObject : public RenderObject {
+class DynamicRenderObject : public RenderObject {
+protected:
+	virtual HRESULT _Render(DxVertexBuffer* bufferVertex, DxIndexBuffer* bufferIndex);
+public:
+	DynamicRenderObject();
+	virtual ~DynamicRenderObject();
+
+	virtual void Initialize();
+	virtual void Update();
+	virtual HRESULT Render() = 0;
+};
+class StaticRenderObject : public DynamicRenderObject {
 protected:
 	shared_ptr<DxVertexBuffer> bufferVertex_;
 	shared_ptr<DxIndexBuffer> bufferIndex_;
@@ -183,23 +197,6 @@ public:
 	void SetScrollX(float x) { scroll_.x = x; }
 	void SetScrollY(float y) { scroll_.y = y; }
 };
-/*
-class DynamicRenderObject : public RenderObject {
-protected:
-	shared_ptr<DxVertexBuffer> bufferVertex_;
-	shared_ptr<DxIndexBuffer> bufferIndex_;
-public:
-	DynamicRenderObject();
-	virtual ~DynamicRenderObject();
-
-	virtual void Initialize();
-	virtual void Update();
-	virtual HRESULT Render() = 0;
-
-	shared_ptr<DxVertexBuffer> GetVertexBuffer() { return bufferVertex_; }
-	shared_ptr<DxIndexBuffer> GetIndexBuffer() { return bufferIndex_; }
-};
-*/
 
 class StaticRenderObject2D : public StaticRenderObject {
 protected:
@@ -207,6 +204,18 @@ protected:
 public:
 	StaticRenderObject2D();
 	virtual ~StaticRenderObject2D();
+
+	virtual HRESULT Render();
+
+	bool IsPermitCamera() { return bPermitCamera_; }
+	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
+};
+class DynamicRenderObject2D : public DynamicRenderObject {
+protected:
+	bool bPermitCamera_;
+public:
+	DynamicRenderObject2D();
+	virtual ~DynamicRenderObject2D();
 
 	virtual HRESULT Render();
 
