@@ -970,14 +970,18 @@ Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* pa
 	{
 		std::vector<VertexTLX> vertex(4U);
 
+		D3DCOLOR color = D3DCOLOR_ARGB(128, 255, 255, 255);
+
 		float width = texture_->GetWidth();
 		float height = texture_->GetHeight();
 		vertex[0] = VertexTLX(D3DXVECTOR3(-16, -16, 1), D3DXVECTOR2(0, 0));
 		vertex[1] = VertexTLX(D3DXVECTOR3(16, -16, 1), D3DXVECTOR2(32 / width, 0));
 		vertex[2] = VertexTLX(D3DXVECTOR3(-16, 16, 1), D3DXVECTOR2(0, 32 / height));
 		vertex[3] = VertexTLX(D3DXVECTOR3(16, 16, 1), D3DXVECTOR2(32 / width, 32 / height));
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i) {
 			vertex[i].Bias(-0.5f);
+			vertex[i].diffuse = color;
+		}
 
 		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
 		lockParam.SetSource(vertex, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
@@ -1098,7 +1102,7 @@ void Stage_ShotDeleteEffectRendererTask::AddInstance(Stage_ObjShot* shot) {
 	newData->color = 0xffffffff;
 	newData->scale = 1;
 	if (shotData) {
-		constexpr float breakSize = 24;
+		constexpr float breakSize = 20;
 		newData->color = shotData->GetColor();
 		newData->scale = breakSize / ((shotData->GetWidth() + shotData->GetHeight()) / 2.0f);
 	}
