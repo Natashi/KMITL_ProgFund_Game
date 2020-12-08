@@ -37,6 +37,7 @@ public:
 	void SetRenderPriority(size_t pri) { renderPri_ = pri; }
 	size_t GetRenderPriorityI() { return renderPri_; }
 	bool IsVisible() { return bVisible_; }
+	void SetDeleted(bool b) { bDeleted_ = b; }
 	bool IsDeleted() { return bDeleted_; }
 
 	bool IsObjectValueExists(const std::string& key) {

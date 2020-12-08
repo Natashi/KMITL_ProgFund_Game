@@ -20,6 +20,11 @@ public:
 		objEnemy->SetY(-999);
 		objEnemy->rateShotDamage_ = 0;
 	}
+	~Shinki_Non1() {
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+	}
 
 	virtual void Activate() {
 		Stage_EnemyPhase::Activate();

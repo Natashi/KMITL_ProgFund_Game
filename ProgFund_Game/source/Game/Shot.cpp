@@ -16,6 +16,11 @@ Stage_ShotManager::Stage_ShotManager(Scene* parent) : TaskBase(parent) {
 	shaderLayer_ = resourceManager->LoadResource<ShaderResource>("resource/shader/layer_shot.fx", "shader/layer_shot.fx");
 
 	resourceManager->LoadResource<ShaderResource>("resource/shader/instanced_shotbreak.fx", "shader/instanced_shotbreak.fx");
+
+	{
+		pTaskDeleteEffect_ = shared_ptr<Stage_ShotDeleteEffectRendererTask>(new Stage_ShotDeleteEffectRendererTask(parent));
+		parent->AddTask(pTaskDeleteEffect_);
+	}
 }
 Stage_ShotManager::~Stage_ShotManager() {
 	for (auto itr = mapShotDataEnemy_.begin(); itr != mapShotDataEnemy_.end(); ++itr)
@@ -55,6 +60,17 @@ void Stage_ShotManager::LoadEnemyShotData() {
 	LOAD_RENDERER_LIST(rendererEnemy);
 	listShotRendererSet_.push_back(std::make_pair(textureEnemy, rendererEnemy));
 
+	D3DCOLOR listShotColor[] = {
+		D3DCOLOR_XRGB(255, 32, 32),		//Red
+		D3DCOLOR_XRGB(255, 32, 255),	//Magenta
+		D3DCOLOR_XRGB(32, 32, 255),		//Blue
+		D3DCOLOR_XRGB(32, 255, 255),	//Cyan
+		D3DCOLOR_XRGB(32, 255, 32),		//Green
+		D3DCOLOR_XRGB(255, 255, 32),	//Yellow
+		D3DCOLOR_XRGB(255, 128, 32),	//Orange
+		D3DCOLOR_XRGB(192, 192, 192),	//Grey
+	};
+
 	Stage_ShotAnimation* listDelayData[8];
 
 	//Delays
@@ -63,6 +79,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 		for (int i = ShotConst::RedDelay; i < ShotConst::WhiteDelay + 1; ++i, ++j) {
 			Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureDelay);
 			anime->pAttachedRenderer_ = rendererDelay;
+			anime->color_ = listShotColor[j];
 
 			Stage_ShotAnimation::Frame frame = {
 				DxRectangle<float>::SetFromIndex(64, 64, i - ShotConst::RedDelay, 4),
@@ -86,6 +103,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 0, true);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(8, 8, c, 8, 0, yOff),
@@ -122,6 +140,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 					listSpin[iType], listFixedAngle[iType]);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(16, 16, c, 8, 0, yOff),
@@ -156,6 +175,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 					listSpin[iType], listFixedAngle[iType]);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(32, 32, c, 8, 128, yOff),
@@ -177,6 +197,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(64, 64, c, 8, 0, yOff),
@@ -206,6 +227,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy, 0, listFixedAngle[iType]);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(32, 32, c, 8, xOff, 384),
@@ -233,6 +255,7 @@ void Stage_ShotManager::LoadEnemyShotData() {
 				Stage_ShotAnimation* anime = new Stage_ShotAnimation(textureEnemy);
 				anime->pDelayData_ = listDelayData[c];
 				anime->pAttachedRenderer_ = rendererEnemy;
+				anime->color_ = listShotColor[c];
 
 				Stage_ShotAnimation::Frame frame = {
 					DxRectangle<float>::SetFromIndex(16, 32, c, 8, 384, yOff),
@@ -512,7 +535,7 @@ void Stage_ShotManager::Render(byte layer) {
 void Stage_ShotManager::Update() {
 	for (auto itr = listShotPlayer_.begin(); itr != listShotPlayer_.end(); ) {
 		auto& iShot = *itr;
-		if (iShot->bDelete_) itr = listShotPlayer_.erase(itr);
+		if (iShot->IsDeleted()) itr = listShotPlayer_.erase(itr);
 		else {
 			(*itr)->ClearIntersected();
 			(*itr)->Update();
@@ -521,7 +544,7 @@ void Stage_ShotManager::Update() {
 	}
 	for (auto itr = listShotEnemy_.begin(); itr != listShotEnemy_.end(); ) {
 		auto& iShot = *itr;
-		if (iShot->bDelete_) itr = listShotEnemy_.erase(itr);
+		if (iShot->IsDeleted()) itr = listShotEnemy_.erase(itr);
 		else {
 			(*itr)->ClearIntersected();
 			(*itr)->Update();
@@ -529,6 +552,26 @@ void Stage_ShotManager::Update() {
 		}
 	}
 	++frame_;
+}
+
+void Stage_ShotManager::DeleteInCircle(ShotOwnerType typeOwner, int64_t cx, int64_t cy, int64_t radius, bool bForce) {
+	std::list<shared_ptr<Stage_ObjShot>>* pList = nullptr;
+	if (typeOwner == ShotOwnerType::Player)
+		pList = &listShotPlayer_;
+	else
+		pList = &listShotEnemy_;
+
+	int64_t rr = radius * radius;
+	for (auto itr = pList->begin(); itr != pList->end(); ++itr) {
+		Stage_ObjShot* shot = itr->get();
+		if (shot->IsDeleted()) continue;
+		if (!bForce && shot->frameClipImmune_ > 0) continue;
+
+		if (Math::HypotSq<int64_t>(cx - shot->posX_, cy - shot->posY_) <= rr) {
+			pTaskDeleteEffect_->AddInstance(shot);
+			shot->SetDeleted(true);
+		}
+	}
 }
 
 //*******************************************************************
@@ -639,7 +682,7 @@ Stage_ShotAnimation::Stage_ShotAnimation(shared_ptr<TextureResource> texture, do
 	hitCircle_ = DxCircle<float>(0, 0, -1);
 }
 
-Stage_ShotAnimation::Frame* Stage_ShotAnimation::GetFrame(size_t frame) {
+const Stage_ShotAnimation::Frame* Stage_ShotAnimation::GetFrame(size_t frame) const {
 	if (listFrameData_.size() == 1U)
 		return &listFrameData_[0];
 
@@ -672,8 +715,6 @@ Stage_ObjShot::Stage_ObjShot(Stage_ShotManager* manager) {
 	polarity_ = IntersectPolarity::White;
 	typeOwner_ = ShotOwnerType::Enemy;
 
-	bDelete_ = false;
-
 	frame_ = 0;
 	frameDelay_ = 0;
 	frameClipImmune_ = 0;
@@ -691,25 +732,25 @@ Stage_ObjShot::~Stage_ObjShot() {
 }
 
 void Stage_ObjShot::_DeleteInLife() {
-	if (bDelete_) return;
+	if (IsDeleted()) return;
 	if (life_ <= 0) {
-		bDelete_ = true;
+		SetDeleted(true);
 	}
 }
 void Stage_ObjShot::_DeleteInAutoClip() {
-	if (bDelete_) return;
+	if (IsDeleted()) return;
 	if (frameClipImmune_ == 0) {
 		const DxRectangle<int>* clip = shotManager_->GetClip();
 
 		if (posX_ < clip->left || posX_ > clip->right || posY_ < clip->top || posY_ > clip->bottom)
-			bDelete_ = true;
+			SetDeleted(true);
 	}
 	else --frameClipImmune_;
 }
 void Stage_ObjShot::_DeleteInFade() {
-	if (bDelete_) return;
+	if (IsDeleted()) return;
 	if (frameFadeDelete_ == 0) {
-		bDelete_ = true;
+		SetDeleted(true);
 	}
 	else --frameFadeDelete_;
 }
@@ -731,7 +772,7 @@ void Stage_ObjShot::SetShotData(Stage_ShotAnimation* id) {
 	pShotData_ = id;
 }
 
-void Stage_ObjShot::_LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>* rcDst, 
+void Stage_ObjShot::_LoadVertices(const DxRectangle<float>* rcSrc, const DxRectangle<float>* rcDst, 
 	D3DCOLOR color, float scale, CD3DXVECTOR2 pos)
 {
 	float scx = scale_.x * scale;
@@ -749,13 +790,13 @@ void Stage_ObjShot::_LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>*
 	SetColor(pVertex, color);
 }
 HRESULT Stage_ObjShot::Render() {
-	if (bDelete_) return E_FAIL;
+	if (IsDeleted()) return E_FAIL;
 	if (pShotData_ == nullptr) return D3DERR_INVALIDCALL;
 
 	Stage_ShotRenderer* renderer = nullptr;
 
-	DxRectangle<float>* rcSrc = nullptr;
-	DxRectangle<float>* rcDst = nullptr;
+	const DxRectangle<float>* rcSrc = nullptr;
+	const DxRectangle<float>* rcDst = nullptr;
 
 	float scale = 1.0f;
 	int alpha = 255;
@@ -767,7 +808,7 @@ HRESULT Stage_ObjShot::Render() {
 		renderer = dataDelay->GetRendererFromBlendType(blend_);
 		if (renderer == nullptr) return D3DERR_INVALIDCALL;
 
-		Stage_ShotAnimation::Frame* animFrameDelay = dataDelay->GetFrame(0);
+		const Stage_ShotAnimation::Frame* animFrameDelay = dataDelay->GetFrame(0);
 		rcSrc = &animFrameDelay->rcSrc;
 		rcDst = &animFrameDelay->rcDst;
 
@@ -781,7 +822,7 @@ HRESULT Stage_ObjShot::Render() {
 		renderer = pShotData_->GetRendererFromBlendType(blend_);
 		if (renderer == nullptr) return D3DERR_INVALIDCALL;
 
-		Stage_ShotAnimation::Frame* animFrame = pShotData_->GetFrame(frame_);
+		const Stage_ShotAnimation::Frame* animFrame = pShotData_->GetFrame(frame_);
 		if (animFrame == nullptr) return D3DERR_INVALIDCALL;
 
 		rcSrc = &animFrame->rcSrc;
@@ -836,13 +877,13 @@ void Stage_ObjShot::Update() {
 	_CommonUpdate();
 }
 
-void Stage_ObjShot::SetSourceRectNormalized(VertexTLX* vert, DxRectangle<float>* rc) {
+void Stage_ObjShot::SetSourceRectNormalized(VertexTLX* vert, const DxRectangle<float>* rc) {
 	vert[0].texcoord = D3DXVECTOR2(rc->left, rc->top);
 	vert[1].texcoord = D3DXVECTOR2(rc->right, rc->top);
 	vert[2].texcoord = D3DXVECTOR2(rc->left, rc->bottom);
 	vert[3].texcoord = D3DXVECTOR2(rc->right, rc->bottom);
 }
-void Stage_ObjShot::SetDestRect(VertexTLX* vert, DxRectangle<float>* rc) {
+void Stage_ObjShot::SetDestRect(VertexTLX* vert, const DxRectangle<float>* rc) {
 	vert[0].position = D3DXVECTOR3(rc->left, rc->top, 1.0f);
 	vert[1].position = D3DXVECTOR3(rc->right, rc->top, 1.0f);
 	vert[2].position = D3DXVECTOR3(rc->left, rc->bottom, 1.0f);
@@ -856,10 +897,10 @@ void Stage_ObjShot::SetColor(VertexTLX* vert, D3DCOLOR color) {
 }
 
 void Stage_ObjShot::_RegistIntersection() {
-	if (bDelete_ || frameDelay_ > 0 || frameFadeDelete_ >= 0) return;
+	if (IsDeleted() || frameDelay_ > 0 || frameFadeDelete_ >= 0) return;
 	if (pShotData_ == nullptr) return;
 
-	DxCircle<float>* pBaseCircle = pShotData_->GetHitboxCircle();
+	const DxCircle<float>* pBaseCircle = pShotData_->GetHitboxCircle();
 	if (pBaseCircle->r > 0) {
 		if (pIntersectionTarget_ == nullptr) {
 			pIntersectionTarget_ = shared_ptr<Stage_IntersectionTarget_Circle>(new Stage_IntersectionTarget_Circle());
@@ -913,7 +954,7 @@ Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* pa
 	IDirect3DDevice9* device = WindowMain::GetBase()->GetDevice();
 
 	GET_INSTANCE(ResourceManager, resourceManager);
-	texture_ = resourceManager->GetResourceAs<TextureResource>("img/player/eff_shotbreak.png");
+	texture_ = resourceManager->GetResourceAs<TextureResource>("img/stage/eff_shotbreak.png");
 	shader_ = resourceManager->GetResourceAs<ShaderResource>("shader/instanced_shotbreak.fx");
 
 	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, 0));
@@ -923,8 +964,8 @@ Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* pa
 	DWORD fmt = D3DFMT_INDEX16;
 	bufferIndex_->Create(4U, sizeof(uint16_t), D3DPOOL_MANAGED, &fmt);
 
-	vecRenderParticle_.resize(8192);
-	countRender_ = 0;
+	vecRenderInstance_.resize(8192);
+	countRenderInstance_ = 0;
 
 	{
 		std::vector<VertexTLX> vertex(4U);
@@ -954,25 +995,83 @@ Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* pa
 void Stage_ShotDeleteEffectRendererTask::Render(byte layer) {
 	if (layer != LAYER_SHOT - 1) return;
 
+	if (countRenderInstance_ == 0) return;
+
 	WindowMain* window = WindowMain::GetBase();
 	IDirect3DDevice9* device = window->GetDevice();
 
 	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
 	window->SetBlendMode(BlendMode::Add);
+
+	ID3DXEffect* effect = shader_->GetEffect();
+	{
+		D3DXHANDLE handle = nullptr;
+		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
+			effect->SetMatrix(handle, window->GetViewportMatrix());
+	}
+
+	shader_->SetTechnique("Render");
+	device->SetTexture(0, texture_->GetTexture());
+
+	VertexBufferManager* vertexManager = VertexBufferManager::GetBase();
+	DxVertexBuffer* bufferInstance = vertexManager->GetDynamicVertexBufferTLX_Instance();
+	{
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(vecRenderInstance_, countRenderInstance_, sizeof(InstanceData));
+		bufferInstance->UpdateBuffer(&lockParam);
+	}
+
+	{
+		device->SetVertexDeclaration(vertexManager->GetDeclarationTLX_Instance());
+
+		device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
+		device->SetStreamSourceFreq(0, D3DSTREAMSOURCE_INDEXEDDATA | countRenderInstance_);
+		device->SetStreamSource(1, bufferInstance->GetBuffer(), 0, sizeof(InstanceData));
+		device->SetStreamSourceFreq(1, D3DSTREAMSOURCE_INSTANCEDATA | 1U);
+
+		device->SetIndices(bufferIndex_->GetBuffer());
+
+		{
+			size_t countPrim = RenderObject::GetPrimitiveCount(D3DPT_TRIANGLESTRIP, 4);
+
+			UINT countPass = 1;
+			HRESULT hr = effect->Begin(&countPass, 0);
+			if (SUCCEEDED(hr)) {
+				for (UINT iPass = 0; iPass < countPass; ++iPass) {
+					effect->BeginPass(iPass);
+					device->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, 4, 0, countPrim);
+					effect->EndPass();
+				}
+				effect->End();
+			}
+		}
+
+		device->SetVertexDeclaration(nullptr);
+		device->SetIndices(nullptr);
+
+		device->SetStreamSourceFreq(0, 0);
+		device->SetStreamSourceFreq(1, 0);
+	}
 }
 void Stage_ShotDeleteEffectRendererTask::Update() {
-	countRender_ = 0;
+	countRenderInstance_ = 0;
 	for (auto itr = listParticle_.begin(); itr != listParticle_.end();) {
 		ParticleData*& pData = (*itr);
-		if (pData->life > FRAME_PER_STEP * 8) {
+		if (pData->life >= FRAME_PER_STEP * 8) {
 			ptr_delete(pData);
 			itr = listParticle_.erase(itr);
 		}
 		else {
 			pData->pos += pData->move;
 
-			memcpy(&vecRenderParticle_[countRender_], pData, sizeof(ParticleData));
-			++countRender_;
+			size_t u_off = (pData->life / FRAME_PER_STEP) * 32;
+			{
+				InstanceData* iInst = &vecRenderInstance_[countRenderInstance_];
+				iInst->diffuse_color = pData->color;
+				iInst->vec4a = D3DXVECTOR4(pData->pos.x, pData->pos.y, pData->scale, pData->scale);
+				iInst->vec4b = D3DXVECTOR4(pData->angle.x, pData->angle.y, u_off / (float)texture_->GetWidth(), 0);
+			}
+			++countRenderInstance_;
 
 			++(pData->life);
 			++itr;
@@ -982,19 +1081,25 @@ void Stage_ShotDeleteEffectRendererTask::Update() {
 
 void Stage_ShotDeleteEffectRendererTask::AddInstance(Stage_ObjShot* shot) {
 	if (listParticle_.size() == 8192) return;
+
+	auto movePattern = shot->GetPattern().get();
+	auto shotData = shot->GetShotData();
+
 	ParticleData* newData = new ParticleData();
 	newData->pos = shot->GetMovePosition();
 	newData->move = D3DXVECTOR2(0, 0);
-	if (auto pattern = shot->GetPattern().get()) {
-		newData->move = D3DXVECTOR2(pattern->GetSpeedX(), pattern->GetSpeedY());
+	if (movePattern) {
+		newData->move = D3DXVECTOR2(movePattern->GetSpeedX(), movePattern->GetSpeedY());
 	}
 	{
 		float zAng = RandProvider::GetBase()->GetReal(0, GM_PI_X2);
 		newData->angle = D3DXVECTOR2(sinf(zAng), cosf(zAng));
 	}
+	newData->color = 0xffffffff;
 	newData->scale = 1;
-	if (auto shotData = shot->GetShotData()) {
-		constexpr float breakSize = 32;
+	if (shotData) {
+		constexpr float breakSize = 24;
+		newData->color = shotData->GetColor();
 		newData->scale = breakSize / ((shotData->GetWidth() + shotData->GetHeight()) / 2.0f);
 	}
 	newData->life = 0;

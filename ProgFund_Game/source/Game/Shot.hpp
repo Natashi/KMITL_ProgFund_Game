@@ -70,6 +70,7 @@ class Stage_ShotAnimation;
 class Stage_ObjShot;
 
 class Stage_ShotRenderer;
+class Stage_ShotDeleteEffectRendererTask;
 
 class Stage_MainScene;
 class Stage_ShotManager : public TaskBase {
@@ -89,6 +90,8 @@ private:
 	shared_ptr<ShaderResource> shaderLayer_;
 
 	DxRectangle<int> rcClip_;
+
+	shared_ptr<Stage_ShotDeleteEffectRendererTask> pTaskDeleteEffect_;
 public:
 	Stage_ShotManager(Scene* parent);
 	~Stage_ShotManager();
@@ -110,7 +113,7 @@ public:
 	shared_ptr<Stage_ObjShot> AddPlayerShot(CD3DXVECTOR2 pos, double speed, double angle,
 		int graphic, size_t delay, IntersectPolarity polarity);
 
-	void DeleteInCircle(ShotOwnerType typeOwner, int cx, int cy, int radius);
+	void DeleteInCircle(ShotOwnerType typeOwner, int64_t cx, int64_t cy, int64_t radius, bool bForce = false);
 
 	size_t GetEnemyShotCount() { return listShotEnemy_.size(); }
 	size_t GetPlayerShotCount() { return listShotPlayer_.size(); }
@@ -161,6 +164,8 @@ private:
 	LONG width_;
 	LONG height_;
 
+	D3DCOLOR color_;
+
 	std::vector<Frame> listFrameData_;
 	size_t maxFrame_;
 
@@ -177,19 +182,21 @@ public:
 		maxFrame_ += nFrame.frame;
 	}
 
-	Frame* GetFrame(size_t frame);
-	size_t GetFrameCount() { return listFrameData_.size(); }
+	const Frame* GetFrame(size_t frame) const;
+	size_t GetFrameCount() const { return listFrameData_.size(); }
 
-	LONG GetWidth() { return width_; }
-	LONG GetHeight() { return height_; }
+	LONG GetWidth() const { return width_; }
+	LONG GetHeight() const { return height_; }
 
-	Stage_ShotAnimation* GetDelayData() { return pDelayData_; }
-	Stage_ShotManager::ListRenderer* GetAttachedRenderer() { return pAttachedRenderer_; }
-	shared_ptr<TextureResource> GetTexture() { return texture_; }
+	D3DCOLOR GetColor() const { return color_; }
+
+	Stage_ShotAnimation* GetDelayData() const { return pDelayData_; }
+	Stage_ShotManager::ListRenderer* GetAttachedRenderer() const { return pAttachedRenderer_; }
+	shared_ptr<TextureResource> GetTexture() const { return texture_; }
 
 	Stage_ShotRenderer* GetRendererFromBlendType(BlendMode blend);
 
-	DxCircle<float>* GetHitboxCircle() { return &hitCircle_; }
+	const DxCircle<float>* GetHitboxCircle() const { return &hitCircle_; }
 };
 
 class Stage_ObjShot : public RenderObject, public Stage_ObjMove, public Stage_ObjCollision {
@@ -205,8 +212,6 @@ public:
 
 	IntersectPolarity polarity_;
 	ShotOwnerType typeOwner_;
-
-	bool bDelete_;
 
 	size_t frame_;
 	size_t frameDelay_;
@@ -229,8 +234,8 @@ protected:
 
 	virtual void _RegistIntersection();
 
-	virtual void _LoadVertices(DxRectangle<float>* rcSrc, DxRectangle<float>* rcDst, D3DCOLOR color, 
-		float scale, CD3DXVECTOR2 pos);
+	virtual void _LoadVertices(const DxRectangle<float>* rcSrc, const DxRectangle<float>* rcDst, 
+		D3DCOLOR color, float scale, CD3DXVECTOR2 pos);
 public:
 	Stage_ObjShot(Stage_ShotManager* manager);
 	virtual ~Stage_ObjShot();
@@ -243,8 +248,6 @@ public:
 	IntersectPolarity GetPolarity() { return polarity_; }
 	ShotOwnerType GetOwnerType() { return typeOwner_; }
 
-	bool IsDelete() { return bDelete_; }
-
 	void SetShotData(int id);
 	void SetShotData(Stage_ShotAnimation* id);
 	Stage_ShotAnimation* GetShotData() { return pShotData_; }
@@ -252,8 +255,8 @@ public:
 	virtual void SetTexture(shared_ptr<TextureResource> texture) { texture_ = texture; }
 	virtual void SetShader(shared_ptr<ShaderResource> shader) { shader_ = shader; }
 
-	void SetSourceRectNormalized(VertexTLX* vert, DxRectangle<float>* rc);
-	void SetDestRect(VertexTLX* vert, DxRectangle<float>* rc);
+	void SetSourceRectNormalized(VertexTLX* vert, const DxRectangle<float>* rc);
+	void SetDestRect(VertexTLX* vert, const DxRectangle<float>* rc);
 	void SetColor(VertexTLX* vert, D3DCOLOR color);
 
 	void SetAngleZOff(double z) { shotAngleZ_ = z; }
@@ -271,14 +274,15 @@ public:
 		D3DXVECTOR2 pos;
 		D3DXVECTOR2 move;
 		D3DXVECTOR2 angle;
+		D3DCOLOR color;
 		float scale;
 		size_t life;
 	};
 	static constexpr size_t FRAME_PER_STEP = 3;
 protected:
 	std::list<ParticleData*> listParticle_;
-	std::vector<ParticleData> vecRenderParticle_;
-	size_t countRender_;
+	std::vector<InstanceData> vecRenderInstance_;
+	size_t countRenderInstance_;
 
 	shared_ptr<TextureResource> texture_;
 	shared_ptr<ShaderResource> shader_;
