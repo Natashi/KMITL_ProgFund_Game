@@ -24,6 +24,8 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 		//Stage UI
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/stg_frame.png", "img/stage/stg_frame.png");
 
+		resourceManager->LoadResource<TextureResource>("resource/img/player/player_stat.png", "img/player/player_stat.png");
+
 		//Stage main
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_aura.png", "img/stage/eff_aura.png");
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_magicsquare.png", "img/stage/eff_magicsquare.png");
@@ -116,7 +118,7 @@ public:
 		sizeDigit_ = D3DXVECTOR2(textureDigit->GetImageInfo()->Width, textureDigit->GetImageInfo()->Height);
 
 		objScore_.SetTexture(textureDigit);
-		objScore_.SetPosition(224, 0, 1);
+		objScore_.SetPosition(224, -1, 1);
 		{
 			std::vector<uint16_t> index(COUNT_SCORE_RENDER * 6U);
 			for (size_t i = 0; i < COUNT_SCORE_RENDER; ++i) {
@@ -199,6 +201,54 @@ public:
 		}
 	}
 };
+class StageUI_PlayerLife : public TaskBase {
+	friend class Stage_MainSceneUI;
+private:
+	Sprite2D objLife_;
+	std::vector<D3DXVECTOR2> listRenderPos_;
+public:
+	StageUI_PlayerLife(Scene* parent) : TaskBase(parent) {
+		GET_INSTANCE(ResourceManager, resourceManager);
+
+		{
+			auto textureLife = resourceManager->GetResourceAs<TextureResource>("img/player/player_stat.png");
+
+			objLife_.SetTexture(textureLife);
+			objLife_.SetSourceRect(DxRectangle<int>(16 * 5, 0, 16 * 5 + 18, 16));
+			objLife_.SetDestCenter();
+			objLife_.UpdateVertexBuffer();
+		}
+	}
+
+	virtual void Render(byte layer) {
+		if (layer != 2) return;
+		for (auto& iPos : listRenderPos_) {
+			objLife_.SetPosition(iPos);
+			objLife_.Render();
+		}
+	}
+	virtual void Update() {
+		shared_ptr<Stage_MainScene> stageScene = parent_->GetParentManager()->GetSceneAs<Stage_MainScene>(Scene::Stage);
+
+		shared_ptr<Stage_PlayerTask> pTaskPlayer = stageScene->GetPlayer();
+		PlayerData* playerData = pTaskPlayer->GetPlayerData();
+
+		if (listRenderPos_.size() == playerData->life) return;
+		if (playerData->life <= 0) {
+			listRenderPos_.clear();
+			return;
+		}
+
+		listRenderPos_.resize(playerData->life);
+
+		constexpr float bx = 128 - 8 - 4;
+		constexpr float by = 464 - 8 - 2;
+		constexpr float ax = 0;
+		constexpr float ay = -16;
+		for (int i = 0; i < playerData->life; ++i)
+			listRenderPos_[i] = D3DXVECTOR2(bx + ax * i, by + ay * i);
+	}
+};
 
 Stage_MainSceneUI::Stage_MainSceneUI(SceneManager* manager) : Scene(manager) {
 	GET_INSTANCE(ResourceManager, resourceManager);
@@ -213,6 +263,7 @@ Stage_MainSceneUI::Stage_MainSceneUI(SceneManager* manager) : Scene(manager) {
 	objFrame_.SetBlendType(BlendMode::Invert);
 
 	this->AddTask(std::make_shared<StageUI_Score>(this));
+	this->AddTask(std::make_shared<StageUI_PlayerLife>(this));
 
 	bAutoDelete_ = false;
 }
