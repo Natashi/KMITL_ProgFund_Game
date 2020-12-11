@@ -8,7 +8,7 @@
 //Stage_PlayerTask
 //*******************************************************************
 CONSTRUCT_TASK(Stage_PlayerTask) {
-	playerData_.life = 2;
+	playerData_.life = 4;
 
 	rcClip_ = DxRectangle<int>(0, 0, 640, 480);
 
@@ -396,7 +396,7 @@ void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget,
 		case Stage_IntersectionTarget::TypeTarget::EnemyShot:
 			if (auto pShot = dynamic_cast<Stage_ObjShot*>(otherTarget->GetParent().lock().get())) {
 				if (!pOwnTarget->IsGraze()) {
-					if (pShot->GetPolarity() != GetPolarity())
+					if (pShot->GetPolarity() != GetPolarity() && frameInvincibility_ == 0)
 						_Death();
 				}
 				else {
