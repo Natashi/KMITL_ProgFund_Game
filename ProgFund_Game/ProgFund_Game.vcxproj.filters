@@ -81,6 +81,9 @@
     <ClCompile Include="source\Game\Stage\BossMain.cpp">
       <Filter>Header Files\Game\Stage1</Filter>
     </ClCompile>
+    <ClCompile Include="source\Game\Stage\Background1.cpp">
+      <Filter>Header Files\Game\Stage1</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -157,6 +160,9 @@
     </ClInclude>
     <ClInclude Include="source\Engine\PointerExtensions.hpp">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Game\Stage\Background1.hpp">
+      <Filter>Header Files\Game\Stage1</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

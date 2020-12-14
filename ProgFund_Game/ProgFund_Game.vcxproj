@@ -205,6 +205,7 @@
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\Game\Shot.cpp" />
     <ClCompile Include="source\Game\StageMain.cpp" />
+    <ClCompile Include="source\Game\Stage\Background1.cpp" />
     <ClCompile Include="source\Game\Stage\BossMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -231,6 +232,7 @@
     <ClInclude Include="source\Game\Player.hpp" />
     <ClInclude Include="source\Game\Shot.hpp" />
     <ClInclude Include="source\Game\StageMain.hpp" />
+    <ClInclude Include="source\Game\Stage\Background1.hpp" />
     <ClInclude Include="source\Game\Stage\BossMain.hpp" />
     <ClInclude Include="source\Game\System.hpp" />
   </ItemGroup>
