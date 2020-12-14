@@ -104,8 +104,8 @@ public:
 		angle = fmod(angle, GM_PI_X2);
 		return angle < 0.0 ? angle + GM_PI_X2 : angle;
 	}
-	static inline double AngleDifferenceRad(double angle1, double angle2) {
-		double dist = NormalizeAngleRad(angle2 - angle1);
+	static inline double AngleDifferenceRad(double angleFrom, double angleTo) {
+		double dist = NormalizeAngleRad(angleTo - angleFrom);
 		return dist > GM_PI ? dist - GM_PI_X2 : dist;
 	}
 

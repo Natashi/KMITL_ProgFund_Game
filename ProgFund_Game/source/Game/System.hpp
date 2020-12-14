@@ -6,11 +6,11 @@
 static constexpr byte LAYER_PLAYER = 2;
 static constexpr byte LAYER_OPTION = 3;
 
-static constexpr byte LAYER_ENEMY = 5;
+static constexpr byte LAYER_ENEMY = 7;
 
-static constexpr byte LAYER_SHOT = 7;
+static constexpr byte LAYER_SHOT = 10;
 
-static constexpr byte LAYER_EX_UI = 13;
+static constexpr byte LAYER_EX_UI = 15;
 
 class SystemUtility {
 private:
@@ -28,8 +28,6 @@ public:
 		resourceManager->LoadResource<TextureResource>("resource/img/system/ascii_960.png", "img/system/ascii_960.png");
 
 		resourceManager->LoadResource<TextureResource>("resource/img/system/sys_digit.png", "img/system/sys_digit.png");
-
-		resourceManager->LoadResource<TextureResource>("resource/img/system/player_stat.png", "img/system/player_stat.png");
 	}
 
 	static DxRectangle<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {

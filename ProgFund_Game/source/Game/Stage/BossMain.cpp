@@ -10,7 +10,9 @@ class Shinki_Non1 : public Stage_EnemyPhase {
 	double tmpD_[2];
 public:
 	Shinki_Non1(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
-		lifeMax_ = 2000;
+		timerDelay_ = 120;
+		timerMax_ = timer_ = 30 * 60;
+		lifeMax_ = 2600;
 
 		step_ = 0;
 		tmpS_[0] = SystemUtility::RandDirection();
@@ -191,6 +193,239 @@ public:
 
 //----------------------------------------------------------------------------------------------------------
 
+class Shinki_Spell1 : public Stage_EnemyPhase {
+private:
+	class _OrbFamiliar : public TaskBase {
+		friend class Shinki_Spell1;
+	private:
+		Stage_ObjMove* objMoveParent_;
+		bool bEnd_;
+		bool bShoot_;
+		bool bWhite_;
+		double dir_;
+
+		double angle_[3];
+		double radius_;
+		Sprite2D objCircle_;
+	public:
+		_OrbFamiliar(Scene* parent, Stage_ObjMove* moveParent, bool bWhite, 
+			double iniAngle, double dir) : TaskBase(parent)
+		{
+			objMoveParent_ = moveParent;
+			bEnd_ = false;
+			bShoot_ = false;
+			bWhite_ = bWhite;
+
+			angle_[0] = iniAngle;
+			angle_[1] = dir;
+			angle_[2] = -999;
+			radius_ = 0;
+
+			{
+				GET_INSTANCE(ResourceManager, resourceManager);
+
+				auto textureOrb = resourceManager->GetResourceAs<TextureResource>("img/stage/enm_orb.png");
+				objCircle_.SetTexture(textureOrb);
+				objCircle_.SetSourceRect(DxRectangle<int>::SetFromIndex(32, 32, bWhite ? 12 : 10, 10));
+				objCircle_.SetDestCenter();
+				objCircle_.UpdateVertexBuffer();
+			}
+		}
+
+		D3DXVECTOR2 GetPosition() {
+			D3DXVECTOR2 opos = objMoveParent_->GetMovePosition();
+			double pa = angle_[0];
+			return opos + (D3DXVECTOR2(cosf(angle_[0]), sinf(angle_[0])) * radius_);
+		}
+
+		virtual void Render(byte layer) {
+			if (layer != LAYER_ENEMY) return;
+			objCircle_.Render();
+		}
+		virtual void Update() {
+			if (!bEnd_) {
+				if (frame_ < 60) {
+					double tmp = frame_ / 59.0;
+					constexpr double fHalfFac = 0.6;
+					double iLine = 0;
+					if (tmp <= fHalfFac)
+						iLine = Math::Lerp::Decelerate<double>(0, 1.4, tmp / fHalfFac);
+					else
+						iLine = Math::Lerp::Accelerate<double>(1.4, 1, (tmp - fHalfFac) / (1 - fHalfFac));
+					radius_ = iLine * 86;
+
+					double tmp_sc = Math::Lerp::Smooth<double>(0, 1, tmp);
+					objCircle_.SetScale(tmp_sc, tmp_sc, 1);
+				}
+				objCircle_.SetPosition(this->GetPosition());
+
+				if (bShoot_) {
+					Stage_MainScene* stage = (Stage_MainScene*)parent_;
+					shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+
+					double angToPlayer = objMoveParent_->GetDeltaAngle(stage->GetPlayer().get());
+					if (angle_[2] == -999) {
+						angle_[2] = angToPlayer;
+					}
+					{
+						double diff = Math::AngleDifferenceRad(angle_[2], angToPlayer);
+						double turnRate = abs(diff) > GM_DTORA(10) ? (1 / 5.0) : (1 / 10.0);
+						angle_[2] = Math::NormalizeAngleRad(angle_[2] + diff * turnRate);
+					}
+
+					if (frame_ % 2 == 0) {
+						shotManager->AddEnemyShot(D3DXVECTOR2(objCircle_.GetPosition()),
+							9, angle_[2],
+							!bWhite_ ? ShotConst::RedBullet : ShotConst::WhiteBullet, 4,
+							!bWhite_ ? IntersectPolarity::Black : IntersectPolarity::White);
+					}
+				}
+			}
+			else {
+				if (frameEnd_ == UINT_MAX) {
+					frame_ = 0;
+					frameEnd_ = 26;
+				}
+
+				double tmp = frame_ / 26.0;
+				double tmp_sc = Math::Lerp::Accelerate<double>(1, 0, tmp);
+				objCircle_.SetScale(tmp_sc, tmp_sc, 1);
+			}
+
+			objCircle_.SetAngleZ(angle_[0] * 1.3214);
+
+			angle_[0] += GM_DTORA(0.67) * angle_[1];
+			++frame_;
+		}
+	};
+private:
+	int step_;
+	std::vector<shared_ptr<_OrbFamiliar>> listTaskOrbs_;
+	double tmp_[2];
+public:
+	Shinki_Spell1(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
+		timerDelay_ = 180;
+		timerMax_ = timer_ = 46 * 60;
+		lifeMax_ = 3100;
+
+		step_ = 0;
+		tmp_[0] = 1;
+
+		objEnemy->SetPattern(nullptr);
+		objEnemy->rateShotDamage_ = 0;
+	}
+	~Shinki_Spell1() {
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+
+		for (auto& iObj : listTaskOrbs_)
+			iObj->bEnd_ = true;
+	}
+
+	virtual void Update() {
+		GET_INSTANCE(RandProvider, rand);
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+
+		switch (step_) {
+		case 0:
+			if (frame_ == 120) {
+				Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
+				move->SetAtFrame(320, 112, 60, Math::Lerp::MODE_SMOOTH);
+				parentEnemy_->SetPattern(move);
+			}
+			else if (frame_ == 190) {
+				auto objPlayer = stage->GetPlayer();
+
+				double randAng = GM_DTORA(rand->GetReal(-2, 2));
+
+				listTaskOrbs_.resize(4U);
+				listTaskOrbs_[0] = shared_ptr<_OrbFamiliar>(new _OrbFamiliar(parent_, parentEnemy_, true, GM_DTORA(-21), 1));
+				listTaskOrbs_[2] = shared_ptr<_OrbFamiliar>(new _OrbFamiliar(parent_, parentEnemy_, true, GM_DTORA(159), 1));
+				listTaskOrbs_[1] = shared_ptr<_OrbFamiliar>(new _OrbFamiliar(parent_, parentEnemy_, false, GM_DTORA(119), -1));
+				listTaskOrbs_[3] = shared_ptr<_OrbFamiliar>(new _OrbFamiliar(parent_, parentEnemy_, false, GM_DTORA(-61), -1));
+				for (auto& iObj : listTaskOrbs_) {
+					iObj->angle_[0] += randAng;
+					parent_->AddTask(iObj);
+				}
+			}
+			else if (frame_ == 250) {
+				step_ = 1;
+				frame_ = 0;
+			}
+			break;
+		case 1:
+		{
+			size_t eFrame = frame_ - 1;
+			if (eFrame == 0) {
+				objBoss->SetChargeType(0);
+				objBoss->SetChargeDuration(210);
+			}
+			if (frame_ == 10) {
+				for (auto& iObj : listTaskOrbs_)
+					iObj->bShoot_ = true;
+			}
+
+			if (eFrame <= 220 && eFrame % 2 == 0) {
+				double angVari = GM_DTORA(Math::Lerp::Linear<double>(110, 45, eFrame / 210.0));
+				double angleToPlayer = objBoss->GetDeltaAngle(stage->GetPlayer().get());
+				shotManager->AddEnemyShot(objBoss->GetMovePosition() + D3DXVECTOR2(-12 * tmp_[0], 2),
+					rand->GetReal(2, 3.5), angleToPlayer + rand->GetReal(-angVari, angVari),
+					ShotConst::RedRingBallM, 6, IntersectPolarity::Black);
+				shotManager->AddEnemyShot(objBoss->GetMovePosition() + D3DXVECTOR2(12 * tmp_[0], 2),
+					rand->GetReal(2, 3.5), angleToPlayer + rand->GetReal(-angVari, angVari),
+					ShotConst::WhiteRingBallM, 6, IntersectPolarity::White);
+			}
+
+			if (eFrame > 0 && eFrame % 50 == 0 && eFrame <= 250) {
+				Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
+				move->SetAtFrame(320 + rand->GetReal(-140, 140), rand->GetReal(64, 144), 49, Math::Lerp::MODE_DECELERATE);
+				parentEnemy_->SetPattern(move);
+			}
+			if (eFrame == 250 + 60) {
+				Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
+				move->SetAtFrame(320, 112, 40, Math::Lerp::MODE_DECELERATE);
+				parentEnemy_->SetPattern(move);
+			}
+			
+			if (eFrame == 250 + 60 + 90) {
+				step_ = 2;
+				frame_ = 0;
+				tmp_[0] = -tmp_[0];
+			}
+			break;
+		}
+		case 2:
+		{
+			size_t eFrame = frame_ - 1;
+			if (eFrame % 40 == 0 && eFrame <= 40 * 10) {
+				double angleToPlayer = objBoss->GetDeltaAngle(stage->GetPlayer().get()) + GM_DTORA(rand->GetReal(-3, 3));
+
+				bool bWhite = rand->GetInt() % 2 == 0;
+				for (int i = -5; i < 6; ++i) {
+					shotManager->AddEnemyShot(objBoss->GetMovePosition(), 1.9, 
+						angleToPlayer + i * GM_DTORA(6),
+						bWhite ? ShotConst::WhiteBallL : RedBallL, 16,
+						bWhite ? IntersectPolarity::White : IntersectPolarity::Black);
+				}
+			}
+
+			if (eFrame == 40 * 10 + 160) {
+				step_ = 1;
+				frame_ = 0;
+			}
+			break;
+		}
+		}
+
+		Stage_EnemyPhase::Update();
+	}
+};
+
+//----------------------------------------------------------------------------------------------------------
+
 //*******************************************************************
 //EnemyBoss_Shinki
 //*******************************************************************
@@ -219,7 +454,8 @@ EnemyBoss_Shinki::EnemyBoss_Shinki(Scene* parent) : Stage_EnemyTask_Scripted(par
 	{
 		std::list<shared_ptr<Stage_EnemyPhase>> listPhase;
 
-		listPhase.push_back(shared_ptr<Shinki_Non1>(new Shinki_Non1(parent_, this)));
+		//listPhase.push_back(shared_ptr<Shinki_Non1>(new Shinki_Non1(parent_, this)));
+		listPhase.push_back(shared_ptr<Shinki_Spell1>(new Shinki_Spell1(parent_, this)));
 
 		InitializePhases(listPhase);
 	}

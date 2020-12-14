@@ -27,6 +27,8 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 		resourceManager->LoadResource<TextureResource>("resource/img/player/player_stat.png", "img/player/player_stat.png");
 
 		//Stage main
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/enm_orb.png", "img/stage/enm_orb.png");
+
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_aura.png", "img/stage/eff_aura.png");
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_magicsquare.png", "img/stage/eff_magicsquare.png");
 
