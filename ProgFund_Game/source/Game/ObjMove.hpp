@@ -64,6 +64,9 @@ public:
 		XY,
 		Line,
 	};
+	enum {
+		NO_CHANGE = -256 * 256,
+	};
 public:
 	Stage_ObjMove* moveTarget_;
 
@@ -73,7 +76,7 @@ public:
 	double c_;
 	double s_;
 protected:
-	virtual void _Activate(Stage_MovePattern* src) = 0;
+	virtual void _CopyFromPrevious(Stage_MovePattern* prev) = 0;
 public:
 	Stage_MovePattern(Stage_ObjMove* target);
 
@@ -95,7 +98,7 @@ public:
 	double maxSpeed_;
 	double angularVelocity_;
 protected:
-	virtual void _Activate(Stage_MovePattern* src);
+	virtual void _CopyFromPrevious(Stage_MovePattern* prev);
 public:
 	Stage_MovePatternAngle(Stage_ObjMove* target);
 
@@ -105,7 +108,8 @@ public:
 	virtual inline double GetDirectionAngle() { return angDirection_; }
 
 	void SetSpeed(double speed) { speed_ = speed; }
-	void SetDirectionAngle(double angle);
+	void SetDirectionAngle(double angle, bool bReset = false);
+	void SetDirectionAngleDirect(double angle) { angDirection_ = angle; }
 
 	virtual double GetSpeedX() { return c_ * speed_; }
 	virtual double GetSpeedY() { return s_ * speed_; }
@@ -117,7 +121,7 @@ public:
 	double maxSpeedX_;
 	double maxSpeedY_;
 protected:
-	virtual void _Activate(Stage_MovePattern* src);
+	virtual void _CopyFromPrevious(Stage_MovePattern* prev);
 public:
 	Stage_MovePatternXY(Stage_ObjMove* target);
 
@@ -143,7 +147,7 @@ public:
 	double posIni_[2];
 	double posTarget_[2];
 protected:
-	virtual void _Activate(Stage_MovePattern* src) {}
+	virtual void _CopyFromPrevious(Stage_MovePattern* prev) {}
 public:
 	Stage_MovePatternLine(Stage_ObjMove* target);
 
