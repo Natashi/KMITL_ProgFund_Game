@@ -417,3 +417,91 @@ void Sprite2D::SetDestCenter() {
 
 	//UpdateVertexBuffer();
 }
+
+//*******************************************************************
+//InstancedMeshBase
+//*******************************************************************
+InstancedMeshBase::InstancedMeshBase() {
+	countInstance_ = 0;
+	instanceData_.resize(32);
+}
+InstancedMeshBase::~InstancedMeshBase() {
+}
+
+void InstancedMeshBase::AddInstance(const InstanceData& data) {
+	if (countInstance_ >= DX_MAX_BUFFER_SIZE) return;
+	if (instanceData_.size() <= countInstance_)
+		instanceData_.resize(instanceData_.size() * 2U);
+	instanceData_[countInstance_++] = data;
+}
+
+//*******************************************************************
+//SpriteInstanced2D
+//*******************************************************************
+SpriteInstanced2D::SpriteInstanced2D() {
+}
+
+HRESULT SpriteInstanced2D::Render() {
+	if (countInstance_ == 0) return D3DERR_INVALIDCALL;
+	if (shader_ == nullptr) return D3DERR_INVALIDCALL;
+
+	if (index_.size() == 0 || vertex_.size() == 0) return E_NOT_VALID_STATE;
+
+	WindowMain* window = WindowMain::GetBase();
+	IDirect3DDevice9* device = window->GetDevice();
+
+	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+	window->SetBlendMode(BlendMode::Add);
+
+	ID3DXEffect* effect = shader_->GetEffect();
+	{
+		D3DXHANDLE handle = nullptr;
+		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
+			effect->SetMatrix(handle, window->GetViewportMatrix());
+	}
+
+	shader_->SetTechnique("Render");
+	device->SetTexture(0, texture_->GetTexture());
+
+	VertexBufferManager* vertexManager = VertexBufferManager::GetBase();
+	DxVertexBuffer* bufferInstance = vertexManager->GetDynamicVertexBufferTLX_Instance();
+	{
+		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
+		lockParam.SetSource(instanceData_, countInstance_, sizeof(InstanceData));
+		bufferInstance->UpdateBuffer(&lockParam);
+	}
+
+	{
+		device->SetVertexDeclaration(vertexManager->GetDeclarationTLX_Instance());
+
+		device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
+		device->SetStreamSourceFreq(0, D3DSTREAMSOURCE_INDEXEDDATA | countInstance_);
+		device->SetStreamSource(1, bufferInstance->GetBuffer(), 0, sizeof(InstanceData));
+		device->SetStreamSourceFreq(1, D3DSTREAMSOURCE_INSTANCEDATA | 1U);
+
+		device->SetIndices(bufferIndex_->GetBuffer());
+
+		{
+			size_t countPrim = GetPrimitiveCount();
+
+			UINT countPass = 1;
+			HRESULT hr = effect->Begin(&countPass, 0);
+			if (SUCCEEDED(hr)) {
+				for (UINT iPass = 0; iPass < countPass; ++iPass) {
+					effect->BeginPass(iPass);
+					device->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, vertex_.size(), 0, countPrim);
+					effect->EndPass();
+				}
+				effect->End();
+			}
+		}
+
+		device->SetVertexDeclaration(nullptr);
+		device->SetIndices(nullptr);
+
+		device->SetStreamSourceFreq(0, 0);
+		device->SetStreamSourceFreq(1, 0);
+	}
+
+	return S_OK;
+}

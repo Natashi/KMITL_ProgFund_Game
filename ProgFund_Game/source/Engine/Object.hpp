@@ -236,3 +236,21 @@ public:
 	void SetDestRect(const DxRectangle<float>& rc);
 	void SetDestCenter();
 };
+
+class InstancedMeshBase {
+protected:
+	size_t countInstance_;
+	std::vector<InstanceData> instanceData_;
+public:
+	InstancedMeshBase();
+	virtual ~InstancedMeshBase();
+
+	void ClearInstance() { countInstance_ = 0; }
+	void AddInstance(const InstanceData& data);
+};
+class SpriteInstanced2D : public InstancedMeshBase, public Sprite2D {
+public:
+	SpriteInstanced2D();
+
+	virtual HRESULT Render();
+};

@@ -955,110 +955,32 @@ Stage_ShotDeleteEffectRendererTask::Stage_ShotDeleteEffectRendererTask(Scene* pa
 
 	GET_INSTANCE(ResourceManager, resourceManager);
 	texture_ = resourceManager->GetResourceAs<TextureResource>("img/stage/eff_shotbreak.png");
-	shader_ = resourceManager->GetResourceAs<ShaderResource>("shader/instanced_shotbreak.fx");
+	objEffects_.SetTexture(texture_);
+	objEffects_.SetShader(resourceManager->GetResourceAs<ShaderResource>("shader/instanced_shotbreak.fx"));
 
-	bufferVertex_ = std::shared_ptr<DxVertexBuffer>(new DxVertexBuffer(device, 0));
-	bufferIndex_ = std::shared_ptr<DxIndexBuffer>(new DxIndexBuffer(device, 0));
-
-	bufferVertex_->Create(4U, sizeof(VertexTLX), D3DPOOL_MANAGED, (DWORD*)&VertexTLX::VertexFormat);
-	DWORD fmt = D3DFMT_INDEX16;
-	bufferIndex_->Create(4U, sizeof(uint16_t), D3DPOOL_MANAGED, &fmt);
-
-	vecRenderInstance_.resize(8192);
-	countRenderInstance_ = 0;
-
+	objEffects_.SetSourceRect(DxRectangle<int>(0, 0, 32, 32));
+	objEffects_.SetDestCenter();
 	{
-		std::vector<VertexTLX> vertex(4U);
-
-		D3DCOLOR color = D3DCOLOR_ARGB(128, 255, 255, 255);
-
-		float width = texture_->GetWidth();
-		float height = texture_->GetHeight();
-		vertex[0] = VertexTLX(D3DXVECTOR3(-16, -16, 1), D3DXVECTOR2(0, 0));
-		vertex[1] = VertexTLX(D3DXVECTOR3(16, -16, 1), D3DXVECTOR2(32 / width, 0));
-		vertex[2] = VertexTLX(D3DXVECTOR3(-16, 16, 1), D3DXVECTOR2(0, 32 / height));
-		vertex[3] = VertexTLX(D3DXVECTOR3(16, 16, 1), D3DXVECTOR2(32 / width, 32 / height));
+		D3DCOLOR color = D3DCOLOR_ARGB(160, 255, 255, 255);
 		for (int i = 0; i < 4; ++i) {
-			vertex[i].Bias(-0.5f);
-			vertex[i].diffuse = color;
+			objEffects_.GetVertex(i)->diffuse = color;
 		}
-
-		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
-		lockParam.SetSource(vertex, DX_MAX_BUFFER_SIZE, sizeof(VertexTLX));
-		bufferVertex_->UpdateBuffer(&lockParam);
 	}
+	objEffects_.UpdateVertexBuffer();
+
 	{
 		std::vector<uint16_t> index = { 0, 1, 2, 3 };
 
-		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
-		lockParam.SetSource(index, DX_MAX_BUFFER_SIZE, sizeof(uint16_t));
-		bufferIndex_->UpdateBuffer(&lockParam);
+		objEffects_.SetArrayIndex(index);
 	}
 }
 
 void Stage_ShotDeleteEffectRendererTask::Render(byte layer) {
 	if (layer != LAYER_SHOT - 1) return;
-
-	if (countRenderInstance_ == 0) return;
-
-	WindowMain* window = WindowMain::GetBase();
-	IDirect3DDevice9* device = window->GetDevice();
-
-	window->SetTextureFilter(D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-	window->SetBlendMode(BlendMode::Add);
-
-	ID3DXEffect* effect = shader_->GetEffect();
-	{
-		D3DXHANDLE handle = nullptr;
-		if (handle = effect->GetParameterBySemantic(nullptr, "VIEWPROJECTION"))
-			effect->SetMatrix(handle, window->GetViewportMatrix());
-	}
-
-	shader_->SetTechnique("Render");
-	device->SetTexture(0, texture_->GetTexture());
-
-	VertexBufferManager* vertexManager = VertexBufferManager::GetBase();
-	DxVertexBuffer* bufferInstance = vertexManager->GetDynamicVertexBufferTLX_Instance();
-	{
-		BufferLockParameter lockParam = BufferLockParameter(D3DLOCK_DISCARD);
-		lockParam.SetSource(vecRenderInstance_, countRenderInstance_, sizeof(InstanceData));
-		bufferInstance->UpdateBuffer(&lockParam);
-	}
-
-	{
-		device->SetVertexDeclaration(vertexManager->GetDeclarationTLX_Instance());
-
-		device->SetStreamSource(0, bufferVertex_->GetBuffer(), 0, sizeof(VertexTLX));
-		device->SetStreamSourceFreq(0, D3DSTREAMSOURCE_INDEXEDDATA | countRenderInstance_);
-		device->SetStreamSource(1, bufferInstance->GetBuffer(), 0, sizeof(InstanceData));
-		device->SetStreamSourceFreq(1, D3DSTREAMSOURCE_INSTANCEDATA | 1U);
-
-		device->SetIndices(bufferIndex_->GetBuffer());
-
-		{
-			size_t countPrim = RenderObject::GetPrimitiveCount(D3DPT_TRIANGLESTRIP, 4);
-
-			UINT countPass = 1;
-			HRESULT hr = effect->Begin(&countPass, 0);
-			if (SUCCEEDED(hr)) {
-				for (UINT iPass = 0; iPass < countPass; ++iPass) {
-					effect->BeginPass(iPass);
-					device->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, 4, 0, countPrim);
-					effect->EndPass();
-				}
-				effect->End();
-			}
-		}
-
-		device->SetVertexDeclaration(nullptr);
-		device->SetIndices(nullptr);
-
-		device->SetStreamSourceFreq(0, 0);
-		device->SetStreamSourceFreq(1, 0);
-	}
+	objEffects_.Render();
 }
 void Stage_ShotDeleteEffectRendererTask::Update() {
-	countRenderInstance_ = 0;
+	objEffects_.ClearInstance();
 	for (auto itr = listParticle_.begin(); itr != listParticle_.end();) {
 		ParticleData*& pData = (*itr);
 		if (pData->life >= FRAME_PER_STEP * 8) {
@@ -1070,12 +992,12 @@ void Stage_ShotDeleteEffectRendererTask::Update() {
 
 			size_t u_off = (pData->life / FRAME_PER_STEP) * 32;
 			{
-				InstanceData* iInst = &vecRenderInstance_[countRenderInstance_];
-				iInst->diffuse_color = pData->color;
-				iInst->vec4a = D3DXVECTOR4(pData->pos.x, pData->pos.y, pData->scale, pData->scale);
-				iInst->vec4b = D3DXVECTOR4(pData->angle.x, pData->angle.y, u_off / (float)texture_->GetWidth(), 0);
+				InstanceData iInst;
+				iInst.diffuse_color = pData->color;
+				iInst.vec4a = D3DXVECTOR4(pData->pos.x, pData->pos.y, pData->scale, pData->scale);
+				iInst.vec4b = D3DXVECTOR4(pData->angle.x, pData->angle.y, u_off / (float)texture_->GetWidth(), 0);
+				objEffects_.AddInstance(iInst);
 			}
-			++countRenderInstance_;
 
 			++(pData->life);
 			++itr;

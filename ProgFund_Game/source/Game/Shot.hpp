@@ -280,14 +280,10 @@ public:
 	};
 	static constexpr size_t FRAME_PER_STEP = 3;
 protected:
-	std::list<ParticleData*> listParticle_;
-	std::vector<InstanceData> vecRenderInstance_;
-	size_t countRenderInstance_;
-
 	shared_ptr<TextureResource> texture_;
-	shared_ptr<ShaderResource> shader_;
-	shared_ptr<DxVertexBuffer> bufferVertex_;
-	shared_ptr<DxIndexBuffer> bufferIndex_;
+
+	SpriteInstanced2D objEffects_;
+	std::list<ParticleData*> listParticle_;
 public:
 	Stage_ShotDeleteEffectRendererTask(Scene* parent);
 
