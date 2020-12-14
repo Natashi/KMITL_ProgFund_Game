@@ -45,7 +45,10 @@ public:
 
 	double GetDeltaAngle(Stage_ObjMove* other) {
 		if (other == nullptr) return 0;
-		return atan2(other->posY_ - posY_, other->posX_ - posX_);
+		return GetDeltaAngle(other->posX_, other->posY_);
+	}
+	double GetDeltaAngle(double x, double y) {
+		return atan2(y - posY_, x - posX_);
 	}
 	static double GetDeltaAngle(Stage_ObjMove* lo, Stage_ObjMove* ro) {
 		return lo->GetDeltaAngle(ro);

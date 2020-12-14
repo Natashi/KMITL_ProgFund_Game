@@ -477,7 +477,7 @@ void Player_HitboxTask::Update() {
 			tScale[1] = tScale[0];
 		}
 
-		tScale[0] = Math::Lerp::Accelerate<double>(tScale[1], 0, frame_ / 5.0);
+		tScale[0] = Math::Lerp::Accelerate<double>(tScale[1], 0, frame_ / 6.0);
 		tAngle += spinRate_;
 	}
 
@@ -566,7 +566,7 @@ void Player_BarrierTask::Update() {
 			tAlpha[3] = tAlpha[1];
 		}
 
-		double rate = frame_ / 11.0;
+		double rate = frame_ / 12.0;
 		tScale[0] = Math::Lerp::Accelerate<double>(tScale[1], 0, rate);
 		tAlpha[0] = Math::Lerp::Smooth<double>(tAlpha[2], 0, rate);
 		tAlpha[1] = Math::Lerp::Smooth<double>(tAlpha[3], 0, rate);
