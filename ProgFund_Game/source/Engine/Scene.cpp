@@ -110,8 +110,7 @@ void Scene::Update() {
 	++frame_;
 }
 std::list<shared_ptr<TaskBase>>::iterator Scene::AddTask(shared_ptr<TaskBase> task) {
-	listTask_.push_back(task);
-	return listTask_.rbegin().base();
+	return listTask_.insert(listTask_.end(), task);
 }
 std::list<shared_ptr<TaskBase>>::iterator Scene::AddTask(std::list<shared_ptr<TaskBase>>::iterator itr, shared_ptr<TaskBase> task) {
 	auto itrRes = listTask_.insert(itr, task);
