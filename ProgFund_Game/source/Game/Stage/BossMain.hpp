@@ -7,6 +7,7 @@
 
 class Boss_MagicCircle;
 class Enemy_LifeIndicatorBoss;
+class Boss_SpellBackground;
 class EnemyBoss_Shinki : public Stage_EnemyTask_Scripted {
 protected:
 	Sprite2D objBossAnimation_;
@@ -18,6 +19,7 @@ protected:
 
 	shared_ptr<Boss_MagicCircle> pTaskCircle_;
 	shared_ptr<Enemy_LifeIndicatorBoss> pTaskLifebar_;
+	shared_ptr<Boss_SpellBackground> pTaskBackground_;
 protected:
 	void _RunAnimation();
 public:
@@ -29,6 +31,8 @@ public:
 	void SetCharging(bool b) { chargeTimer_ = b ? UINT_MAX : 0; }
 	void SetChargeDuration(size_t d) { chargeTimer_ = d; }
 	void SetChargeType(byte t) { chargeMode_ = t; frameAnimCharge_ = 0; }
+
+	void SetSpellBackground(bool b);
 };
 
 class Boss_MagicCircle : public TaskBase {
@@ -64,4 +68,23 @@ public:
 
 	virtual void Render(byte layer);
 	virtual void Update();
+};
+
+//----------------------------------------------------------------------------------
+
+class Boss_SpellBackground : public TaskBase {
+	friend class EnemyBoss_Shinki;
+private:
+	Sprite2D objBack_;
+	Sprite2D objFront_;
+	bool bVisible_;
+
+	double tAlpha_;
+public:
+	Boss_SpellBackground(Scene* parent);
+
+	virtual void Render(byte layer);
+	virtual void Update();
+
+	void SetVisible(bool b) { bVisible_ = b; }
 };

@@ -5,6 +5,7 @@
 #include "Player.hpp"
 #include "Shot.hpp"
 
+#include "Stage/Background1.hpp"
 #include "Stage/BossMain.hpp"
 
 //*******************************************************************
@@ -33,6 +34,9 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/eff_magicsquare.png", "img/stage/eff_magicsquare.png");
 
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/dot_shinki.png", "img/stage/dot_shinki.png");
+
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/background/bg_spell0.png", "img/stage/background/bg_spell0.png");
+		resourceManager->LoadResource<TextureResource>("resource/img/stage/background/bg_spell1.png", "img/stage/background/bg_spell1.png");
 
 		//Player
 		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_base.png", "img/player/eff_base.png");
@@ -374,6 +378,13 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 	{
 		//auto pTaskTest = std::make_shared<Stage_ShotTest>(this);
 		//this->AddTask(pTaskTest);
+	}
+	{
+		auto sceneStage1BG = shared_ptr<Stage_BackgroundScene1>(new Stage_BackgroundScene1(manager));
+		manager->AddScene(sceneStage1BG, Scene::Background);
+
+		sceneStage1BG->AddBackground("ST1_BOSS", 
+			shared_ptr<Boss_SpellBackground>(new Boss_SpellBackground(sceneStage1BG.get())));
 	}
 
 	bAutoDelete_ = false;

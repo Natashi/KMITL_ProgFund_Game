@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Background1.hpp"
 #include "BossMain.hpp"
 
 //----------------------------------------------------------------------------------------------------------
@@ -269,7 +270,7 @@ private:
 					}
 					{
 						double diff = Math::AngleDifferenceRad(angle_[2], angToPlayer);
-						double turnRate = abs(diff) > GM_DTORA(10) ? (1 / 5.0) : (1 / 10.0);
+						double turnRate = abs(diff) > GM_DTORA(12) ? (1 / 3.0) : (1 / 15.0);
 						angle_[2] = Math::NormalizeAngleRad(angle_[2] + diff * turnRate);
 					}
 
@@ -319,6 +320,9 @@ public:
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
 		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
 
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		objBoss->SetSpellBackground(false);
+
 		for (auto& iObj : listTaskOrbs_)
 			iObj->bEnd_ = true;
 	}
@@ -337,6 +341,8 @@ public:
 				parentEnemy_->SetPattern(move);
 			}
 			else if (frame_ == 190) {
+				objBoss->SetSpellBackground(true);
+
 				auto objPlayer = stage->GetPlayer();
 
 				double randAng = GM_DTORA(rand->GetReal(-2, 2));
@@ -368,15 +374,29 @@ public:
 					iObj->bShoot_ = true;
 			}
 
-			if (eFrame <= 220 && eFrame % 2 == 0) {
-				double angVari = GM_DTORA(Math::Lerp::Linear<double>(110, 45, eFrame / 210.0));
+			if (eFrame <= 230 && eFrame % 2 == 0) {
+				double angVari = GM_DTORA(Math::Lerp::Linear<double>(110, 45, eFrame / 230.0));
 				double angleToPlayer = objBoss->GetDeltaAngle(stage->GetPlayer().get());
-				shotManager->AddEnemyShot(objBoss->GetMovePosition() + D3DXVECTOR2(-12 * tmp_[0], 2),
-					rand->GetReal(2, 3.5), angleToPlayer + rand->GetReal(-angVari, angVari),
-					ShotConst::RedRingBallM, 6, IntersectPolarity::Black);
-				shotManager->AddEnemyShot(objBoss->GetMovePosition() + D3DXVECTOR2(12 * tmp_[0], 2),
-					rand->GetReal(2, 3.5), angleToPlayer + rand->GetReal(-angVari, angVari),
-					ShotConst::WhiteRingBallM, 6, IntersectPolarity::White);
+				{
+					auto shot = shotManager->AddEnemyShot(
+						objBoss->GetMovePosition() + D3DXVECTOR2(-14 * tmp_[0], 0),
+						0.1, angleToPlayer + rand->GetReal(-angVari, angVari),
+						ShotConst::RedRingBallM, 12, IntersectPolarity::Black);
+					auto pattern = new Stage_MovePatternAngle(shot.get());
+					pattern->SetSpeed(rand->GetReal(2, 3.5));
+					pattern->SetDirectionAngleDirect(Stage_MovePattern::NO_CHANGE);
+					shot->AddPattern(8, shared_ptr<Stage_MovePattern>(pattern));
+				}
+				{
+					auto shot = shotManager->AddEnemyShot(
+						objBoss->GetMovePosition() + D3DXVECTOR2(14 * tmp_[0], 0),
+						0.1, angleToPlayer + rand->GetReal(-angVari, angVari),
+						ShotConst::WhiteRingBallM, 12, IntersectPolarity::White);
+					auto pattern = new Stage_MovePatternAngle(shot.get());
+					pattern->SetSpeed(rand->GetReal(2, 3.5));
+					pattern->SetDirectionAngleDirect(Stage_MovePattern::NO_CHANGE);
+					shot->AddPattern(8, shared_ptr<Stage_MovePattern>(pattern));
+				}
 			}
 
 			if (eFrame > 0 && eFrame % 50 == 0 && eFrame <= 250) {
@@ -449,6 +469,11 @@ EnemyBoss_Shinki::EnemyBoss_Shinki(Scene* parent) : Stage_EnemyTask_Scripted(par
 		objBossAnimation_.SetSourceRect(DxRectangle<int>(0, 0, 128, 128));
 		objBossAnimation_.SetDestCenter();
 		objBossAnimation_.UpdateVertexBuffer();
+	}
+
+	{
+		auto sceneBG = (Stage_BackgroundScene1*)(parent_->GetParentManager()->GetScene(Scene::Background).get());
+		pTaskBackground_ = std::dynamic_pointer_cast<Boss_SpellBackground>(sceneBG->GetBackground("ST1_BOSS"));
 	}
 
 	{
@@ -582,6 +607,10 @@ void EnemyBoss_Shinki::Update() {
 
 	Stage_EnemyTask_Scripted::Update();
 	++frame_;
+}
+
+void EnemyBoss_Shinki::SetSpellBackground(bool b) {
+	pTaskBackground_->SetVisible(b);
 }
 
 //*******************************************************************
@@ -724,4 +753,69 @@ void Enemy_LifeIndicatorBoss::Update() {
 		}
 		objBar_.SetColor(color / 255.0f);
 	}
+}
+
+//----------------------------------------------------------------------------------------------------------
+
+//*******************************************************************
+//Boss_SpellBackground
+//*******************************************************************
+Boss_SpellBackground::Boss_SpellBackground(Scene* parent) : TaskBase(parent) {
+	GET_INSTANCE(ResourceManager, resourceManager);
+
+	bVisible_ = false;
+	tAlpha_ = 0;
+
+	{
+		objBack_.SetTexture(
+			resourceManager->GetResourceAs<TextureResource>("img/stage/background/bg_spell0.png"));
+		objBack_.SetSourceRect(DxRectangle<int>(0, 0, 512, 512));
+		objBack_.SetDestCenter();
+		objBack_.UpdateVertexBuffer();
+
+		objBack_.SetColor(170, 170, 170);
+		objBack_.SetPosition(320, 240, 1);
+		objBack_.SetScale(1.25, 1.25, 1);	//640 / 512
+	}
+
+	{
+		objFront_.SetTexture(
+			resourceManager->GetResourceAs<TextureResource>("img/stage/background/bg_spell1.png"));
+		objFront_.SetSourceRect(DxRectangle<int>(0, 0, 512, 512));
+		objFront_.SetDestCenter();
+		objFront_.UpdateVertexBuffer();
+
+		objFront_.SetPosition(320, 240, 1);
+	}
+}
+
+void Boss_SpellBackground::Render(byte layer) {
+	if (layer != 2) return;
+	objBack_.SetAlpha(255 * tAlpha_);
+	objBack_.Render();
+
+	{
+		objFront_.SetBlendType(BlendMode::Subtract);
+		objFront_.SetAlpha(255 * tAlpha_);
+		objFront_.SetScale(1.2, 1.2, 1);
+		objFront_.SetAngleZ(frame_ * GM_DTORA(0.2581));
+		objFront_.Render();
+	}
+	{
+		double tmp_sc = 1 + sin(frame_ * GM_DTORA(0.68)) * 0.08;
+
+		objFront_.SetBlendType(BlendMode::Alpha);
+		objFront_.SetAlpha(224 * tAlpha_);
+		objFront_.SetScale(tmp_sc, tmp_sc, 1);
+		objFront_.SetAngleZ(0);
+		objFront_.Render();
+	}
+}
+void Boss_SpellBackground::Update() {
+	if (bVisible_)
+		IncUntil(tAlpha_, 1 / 20.0, 1.0);
+	else
+		DecUntil(tAlpha_, 1 / 30.0, 0.0);
+
+	++frame_;
 }
