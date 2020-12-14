@@ -126,7 +126,7 @@ Stage_IntersectionSpace::CreateIntersectionCheckList(Stage_IntersectionManager* 
 	ListTarget* pListTargetA = &pairTargetList_.first;
 	ListTarget* pListTargetB = &pairTargetList_.second;
 
-	std::atomic_uint count = 0;
+	volatile unsigned int count = 0;
 
 	if (pListTargetA->size() > 0 && pListTargetB->size() > 0) {
 		static std::mutex mtx;
@@ -136,13 +136,13 @@ Stage_IntersectionSpace::CreateIntersectionCheckList(Stage_IntersectionManager* 
 			const DxRectangle<int>& boundB = targetB->GetIntersectionSpaceRect();
 
 			if (DxCollider::Test(boundA, boundB)) {
-				if (count >= pooledCheckList_.size()) {
+				if ((size_t)count >= pooledCheckList_.size()) {
 					mtx.lock();
 					pooledCheckList_.resize(pooledCheckList_.size() * 2);
 					mtx.unlock();
 				}
-				pooledCheckList_[count] = std::make_pair(targetA, targetB);
-				++count;
+				pooledCheckList_[(size_t)count] = std::make_pair(targetA, targetB);
+				InterlockedIncrement(&count);
 			}
 		};
 
@@ -167,7 +167,7 @@ Stage_IntersectionSpace::CreateIntersectionCheckList(Stage_IntersectionManager* 
 		}
 	}
 
-	*pTotal = count;
+	*pTotal = (size_t)count;
 	return &pooledCheckList_;
 }
 
