@@ -479,11 +479,11 @@ shared_ptr<Stage_ObjShot> Stage_ShotManager::AddPlayerShot(CD3DXVECTOR2 pos, dou
 
 void Stage_ShotManager::Render(byte layer) {
 	for (auto& iShot : listShotPlayer_) {
-		if (iShot->GetRenderPriorityI() == layer)
+		if (iShot->GetRenderPriority() == layer)
 			iShot->Render();
 	}
 	for (auto& iShot : listShotEnemy_) {
-		if (iShot->GetRenderPriorityI() == layer)
+		if (iShot->GetRenderPriority() == layer)
 			iShot->Render();
 	}
 
@@ -564,12 +564,13 @@ void Stage_ShotManager::DeleteInCircle(ShotOwnerType typeOwner, int64_t cx, int6
 	int64_t rr = radius * radius;
 	for (auto itr = pList->begin(); itr != pList->end(); ++itr) {
 		Stage_ObjShot* shot = itr->get();
-		if (shot->IsDeleted()) continue;
+		if (shot->IsDeleted() || shot->frameFadeDelete_ >= 0) continue;
 		if (!bForce && shot->frameClipImmune_ > 0) continue;
 
 		if (Math::HypotSq<int64_t>(cx - shot->posX_, cy - shot->posY_) <= rr) {
 			pTaskDeleteEffect_->AddInstance(shot);
-			shot->SetDeleted(true);
+			shot->frameFadeDelete_ = Stage_ObjShot::FADE_MAX;
+			//shot->SetDeleted(true);
 		}
 	}
 }

@@ -33,6 +33,8 @@ public:
 	void SetChargeType(byte t) { chargeMode_ = t; frameAnimCharge_ = 0; }
 
 	void SetSpellBackground(bool b);
+
+	//void SetEnd() { frameEnd_ = 0; }
 };
 
 class Boss_MagicCircle : public TaskBase {

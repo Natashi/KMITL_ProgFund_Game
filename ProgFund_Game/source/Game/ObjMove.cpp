@@ -23,7 +23,7 @@ void Stage_ObjMove::_Move() {
 				itrFirst->second->_CopyFromPrevious(pattern_.get());
 			pattern_ = itrFirst->second;
 
-			mapWaitPattern_.erase(itrFirst);
+			itrFirst = mapWaitPattern_.erase(itrFirst);
 			if (mapWaitPattern_.size() == 0) break;
 		}
 	}

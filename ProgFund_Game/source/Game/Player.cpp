@@ -675,6 +675,9 @@ void Player_OptionTask::Update() {
 Player_DeadManagerTask::Player_DeadManagerTask(Scene* parent) : TaskBase(parent) {
 }
 void Player_DeadManagerTask::Update() {
+	Stage_MainScene* stage = (Stage_MainScene*)parent_;
+	auto objPlayer = stage->GetPlayer();
+
 	static D3DXVECTOR2 posInvert;
 
 	constexpr size_t DU_INV = 110;
@@ -684,24 +687,30 @@ void Player_DeadManagerTask::Update() {
 
 	switch (frame_) {
 	case 0:
-		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetMovePosition();
+		posInvert = objPlayer->GetMovePosition();
 		parent_->AddTask(new Player_DeadCircleTask(parent_, posInvert));
 		parent_->AddTask(new Player_DeadParticleTask(parent_, posInvert));
 		break;
 	case WT_1:
-		posInvert = ((Stage_MainScene*)parent_)->GetPlayer()->GetMovePosition();
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 1100, DU_INV, posInvert));
+		posInvert = objPlayer->GetMovePosition();
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert, 1100, DU_INV));
 		break;
 	case WT_1 + WT_2:
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 900, DU_INV - WT_2, posInvert + D3DXVECTOR2(-32, -32)));
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 900, DU_INV - WT_2, posInvert + D3DXVECTOR2(32, -32)));
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 900, DU_INV - WT_2, posInvert + D3DXVECTOR2(-32, 32)));
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 900, DU_INV - WT_2, posInvert + D3DXVECTOR2(32, 32)));
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert + D3DXVECTOR2(-32, -32), 900, DU_INV - WT_2));
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert + D3DXVECTOR2(32, -32), 900, DU_INV - WT_2));
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert + D3DXVECTOR2(-32, 32), 900, DU_INV - WT_2));
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert + D3DXVECTOR2(32, 32), 900, DU_INV - WT_2));
 		break;
 	case WT_1 + WT_2 + WT_3:
-		parent_->AddTask(new Player_DeadInvertTask(parent_, 800, DU_INV - WT_2 - WT_3, posInvert));
+	{
+		{
+			auto shotManager = stage->GetShotManager();
+			shotManager->DeleteInCircle(ShotOwnerType::Enemy, objPlayer->posX_, objPlayer->posY_, 128, false);
+		}
+		parent_->AddTask(new SystemEffects::InvertCircle(parent_, posInvert, 800, DU_INV - WT_2 - WT_3));
 		frameEnd_ = 0;
 		break;
+	}
 	}
 
 	++frame_;
@@ -748,53 +757,6 @@ void Player_DeadCircleTask::Update() {
 	objCircle_.SetAlpha(tmp_a);
 
 	tAngle[0] += tAngle[1];
-
-	++frame_;
-}
-
-//*******************************************************************
-//Player_DeadInvertTask
-//*******************************************************************
-Player_DeadInvertTask::Player_DeadInvertTask(Scene* parent, double radius, size_t frameEnd, CD3DXVECTOR2 pos) : TaskBase(parent) {
-	frameEnd_ = frameEnd;
-
-	{
-		constexpr size_t countEdge = 64;
-
-		std::vector<VertexTLX> vertex;
-		vertex.resize(countEdge + 1);
-
-		std::vector<uint16_t> index;
-		index.resize((countEdge + 1) * 2);
-
-		vertex[countEdge] = VertexTLX(D3DXVECTOR3(0, 0, 0));
-		for (size_t i = 0; i < countEdge; ++i) {
-			double va = GM_PI_X2 / countEdge * i;
-			vertex[i] = VertexTLX(D3DXVECTOR3(radius * cos(va), radius * sin(va), 1));
-
-			index[i * 2 + 0] = i;
-			index[i * 2 + 1] = countEdge;
-		}
-		index[countEdge * 2 + 0] = 0;
-		index[countEdge * 2 + 1] = countEdge;
-
-		objCircle_.SetArrayVertex(vertex);
-		objCircle_.SetArrayIndex(index);
-	}
-
-	objCircle_.SetPrimitiveType(D3DPT_TRIANGLESTRIP);
-	objCircle_.SetBlendType(BlendMode::Invert);
-	objCircle_.SetPosition(pos);
-}
-void Player_DeadInvertTask::Render(byte layer) {
-	if (layer != LAYER_EX_UI - 1) return;
-	objCircle_.Render();
-}
-void Player_DeadInvertTask::Update() {
-	double tmp = frame_ / ((double)frameEnd_ - 1);
-	double tmp_s = Math::Lerp::Accelerate<double>(0, 1, tmp);
-
-	objCircle_.SetScale(tmp_s, tmp_s, 1);
 
 	++frame_;
 }

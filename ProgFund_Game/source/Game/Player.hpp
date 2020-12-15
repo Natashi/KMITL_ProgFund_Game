@@ -197,16 +197,6 @@ public:
 	virtual void Render(byte layer);
 	virtual void Update();
 };
-class Player_DeadInvertTask : public TaskBase {
-	friend class Stage_PlayerTask;
-private:
-	StaticRenderObject2D objCircle_;
-public:
-	Player_DeadInvertTask(Scene* parent, double radius, size_t frameEnd, CD3DXVECTOR2 pos);
-
-	virtual void Render(byte layer);
-	virtual void Update();
-};
 class Player_DeadParticleTask : public TaskBase {
 	friend class Stage_PlayerTask;
 private:

@@ -21,6 +21,8 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <string>
+#include <cstring>
 
 #include <iostream>
 #include <fstream>
@@ -47,6 +49,7 @@
 #pragma warning(disable : 4005)		//macro redefinition
 #pragma warning(disable : 4244)		//conversion from x to y, possible loss of data
 #pragma warning(disable : 4305)		//double->float truncation
+#pragma warning(disable : 26451)	//arithmetic overflow
 #pragma warning(disable : 26495)	//'x' is uninitialized
 #pragma warning(disable : 26812)	//prefer enum class over enum
 

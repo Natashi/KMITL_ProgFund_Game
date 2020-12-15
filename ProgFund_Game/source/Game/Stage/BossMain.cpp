@@ -5,6 +5,196 @@
 
 //----------------------------------------------------------------------------------------------------------
 
+class Spell_BonusScoreText : public TaskBase {
+	StaticRenderObject2D objHeader_;
+	StaticRenderObject2D objScore_;
+public:
+	Spell_BonusScoreText(Scene* parent, const std::string& header, uint64_t bonus,
+		const DxRectangle<float>& rcDst, D3DCOLOR colTop, D3DCOLOR colBot) : TaskBase(parent) 
+	{
+		GET_INSTANCE(ResourceManager, resourceManager);
+
+		frameEnd_ = 180;
+
+		VertexTLX verts[4];
+		std::vector<VertexTLX> vertex;
+		std::vector<uint16_t> index;
+
+		{
+			auto textureAscii = resourceManager->GetResourceAs<TextureResource>("img/system/ascii_960.png");
+			objHeader_.SetTexture(textureAscii);
+
+			DxRectangle<float> rcBaseDst(-10, -10, 10, 10);
+
+			for (size_t iChar = 0; iChar < header.size(); ++iChar) {
+				{
+					uint16_t bii = iChar * 4;
+					index.push_back(bii + 0);
+					index.push_back(bii + 1);
+					index.push_back(bii + 2);
+					index.push_back(bii + 2);
+					index.push_back(bii + 1);
+					index.push_back(bii + 3);
+				}
+
+				{
+					SystemUtility::SetVertexAsciiSingle(verts, header[iChar],
+						rcBaseDst + DxRectangle<float>::SetFromSize(16 * iChar, 0), 
+						D3DXVECTOR2(21, 21), D3DXVECTOR2(512, 512));
+					verts[0].diffuse = (colTop & 0x00ffffff) | (0xff000000);
+					verts[1].diffuse = (colTop & 0x00ffffff) | (0xff000000);
+					verts[2].diffuse = (colBot & 0x00ffffff) | (0xff000000);
+					verts[3].diffuse = (colBot & 0x00ffffff) | (0xff000000);
+
+					{
+						vertex.push_back(verts[0]);
+						vertex.push_back(verts[1]);
+						vertex.push_back(verts[2]);
+						vertex.push_back(verts[3]);
+					}
+				}
+			}
+
+			objHeader_.SetArrayVertex(vertex);
+			objHeader_.SetArrayIndex(index);
+
+			objHeader_.SetPosition(320 - (16 * (header.size() - 1)) / 2.0f, 192, 1);
+		}
+
+		{
+			auto textureDigit = resourceManager->GetResourceAs<TextureResource>("img/system/sys_digit.png");
+			objScore_.SetTexture(textureDigit);
+
+			vertex.clear();
+			index.clear();
+
+			std::string _bonus = std::to_string(bonus);
+			_bonus = (char)('0' + 13) + _bonus;
+			DxRectangle<float> rcBaseDst(-8, -12, 8, 12);
+
+			for (size_t iDigit = 0; iDigit < _bonus.size(); ++iDigit) {
+				{
+					uint16_t bii = iDigit * 4;
+					index.push_back(bii + 0);
+					index.push_back(bii + 1);
+					index.push_back(bii + 2);
+					index.push_back(bii + 2);
+					index.push_back(bii + 1);
+					index.push_back(bii + 3);
+				}
+
+				{
+					DxRectangle<int> rcChar = DxRectangle<int>::SetFromIndex(16, 24, _bonus[iDigit] - '0', 20);
+					SystemUtility::SetVertexAsciiSingle(verts, rcChar,
+						rcBaseDst + DxRectangle<float>::SetFromSize(16 * iDigit, 0), D3DXVECTOR2(256, 64));
+					verts[0].diffuse = (colTop & 0x00ffffff) | (0xff000000);
+					verts[1].diffuse = (colTop & 0x00ffffff) | (0xff000000);
+					verts[2].diffuse = (colBot & 0x00ffffff) | (0xff000000);
+					verts[3].diffuse = (colBot & 0x00ffffff) | (0xff000000);
+
+					{
+						vertex.push_back(verts[0]);
+						vertex.push_back(verts[1]);
+						vertex.push_back(verts[2]);
+						vertex.push_back(verts[3]);
+					}
+				}
+			}
+
+			objScore_.SetArrayVertex(vertex);
+			objScore_.SetArrayIndex(index);
+
+			objScore_.SetPosition(320 - (16 * (_bonus.size() - 1)) / 2.0f, 192 + 32, 1);
+		}
+	}
+
+	virtual void Render(byte layer) {
+		if (layer != 6) return;
+		objHeader_.Render();
+		objScore_.Render();
+	}
+	virtual void Update() {
+		if (frame_ < 20) {
+			float tmp = frame_ / 19.0f;
+			float tmp_s = Math::Lerp::Smooth<double>(0, 1, tmp);
+
+			objHeader_.SetScaleY(tmp_s);
+
+			objHeader_.SetAlpha(tmp * 255);
+			objScore_.SetAlpha(tmp * 255);
+		}
+
+		if (frame_ >= 150 && frame_ < 180) {
+			float tmp = (frame_ - 150) / 29.0f;
+			float tmp_s = Math::Lerp::Smooth<double>(1, 0, tmp);
+
+			objHeader_.SetScaleY(tmp_s);
+			objScore_.SetScaleY(tmp_s);
+		}
+
+		++frame_;
+	}
+};
+
+class Spell_BonusWaiter {
+	Stage_MainScene* stage_;
+	int playerLifePrev_;
+	int timerMax_;
+	size_t bonus_;
+public:
+	Spell_BonusWaiter() {
+		playerLifePrev_ = 0;
+		timerMax_ = -1;
+	}
+
+	void Init(Stage_MainScene* stage) {
+		stage_ = stage;
+	}
+
+	void Begin(Stage_EnemyPhase* pPhase, size_t bonus) {
+		if (stage_ == nullptr) return;
+		auto objPlayer = stage_->GetPlayer();
+
+		playerLifePrev_ = objPlayer->GetPlayerData()->life;
+		timerMax_ = pPhase->timerMax_;
+		bonus_ = bonus;
+	}
+	void End(Stage_EnemyPhase* pPhase) {
+		if (stage_ == nullptr) return;
+		auto objPlayer = stage_->GetPlayer();
+
+		auto stageUI = stage_->GetParentManager()->GetSceneAs<Stage_MainSceneUI>(Scene::StageUI);
+
+		int playerLifeNow = objPlayer->GetPlayerData()->life;
+
+		size_t addingBonus = 0;
+		double mul = (int)(objPlayer->GetPlayerData()->scoreMultiplier * 10) / 10.0;	//Round to 1 decimal place
+
+		//The player must not have lost a life, and the attack must have been shot down before its timer ran out.
+		if (playerLifeNow >= playerLifePrev_ && (pPhase->timerMax_ == -1 || pPhase->timer_ > 0)) {
+			addingBonus = bonus_;
+			if (pPhase->timerMax_ > 0)
+				addingBonus = bonus_ * (pPhase->timer_ / (double)pPhase->timerMax_);
+
+			addingBonus *= mul;
+
+			stageUI->AddTask(new Spell_BonusScoreText(stageUI.get(), "Spell Bonus Get!", addingBonus,
+				DxRectangle<int>(), D3DCOLOR_XRGB(246, 212, 101), 0xffffffff));
+		}
+		else {		//Fonus Bailed
+			addingBonus = 10000 * mul;
+
+			stageUI->AddTask(new Spell_BonusScoreText(stageUI.get(), "Bonus Failed...", addingBonus,
+				DxRectangle<int>(), 0xffffffff, D3DCOLOR_XRGB(186, 182, 200)));
+		}
+
+		objPlayer->GetPlayerData()->stat.score += addingBonus;
+	}
+};
+static shared_ptr<Spell_BonusWaiter> g_spellBonusWait = shared_ptr<Spell_BonusWaiter>(new Spell_BonusWaiter());
+
+//----------------------------------------------------------------------------------------------------------
+
 class Shinki_Non1 : public Stage_EnemyPhase {
 	int step_;
 	int tmpS_[2];
@@ -80,7 +270,7 @@ public:
 				tmpD_[1] += GM_DTORA(1.32) * tmpS_[0];
 			}
 
-			if (eFrame == 24 * 2 + 6) {
+			if (eFrame == 23 * 2 + 6) {
 				step_ = 2;
 				frame_ = 0;
 
@@ -311,9 +501,6 @@ public:
 
 		step_ = 0;
 		tmp_[0] = 1;
-
-		objEnemy->SetPattern(nullptr);
-		objEnemy->rateShotDamage_ = 0;
 	}
 	~Shinki_Spell1() {
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
@@ -325,6 +512,18 @@ public:
 
 		for (auto& iObj : listTaskOrbs_)
 			iObj->bEnd_ = true;
+
+		g_spellBonusWait->End(this);
+	}
+
+	virtual void Activate() {
+		Stage_EnemyPhase::Activate();
+
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		parentEnemy_->SetPattern(nullptr);
+		parentEnemy_->rateShotDamage_ = 0;
+
+		g_spellBonusWait->Begin(this, 100000);
 	}
 
 	virtual void Update() {
@@ -342,6 +541,7 @@ public:
 			}
 			else if (frame_ == 190) {
 				objBoss->SetSpellBackground(true);
+				objBoss->rateShotDamage_ = 1;
 
 				auto objPlayer = stage->GetPlayer();
 
@@ -446,6 +646,307 @@ public:
 
 //----------------------------------------------------------------------------------------------------------
 
+class Shinki_Spell2 : public Stage_EnemyPhase {
+private:
+	int step_;
+	double tmp_[3];
+public:
+	Shinki_Spell2(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
+		GET_INSTANCE(RandProvider, rand);
+
+		timerDelay_ = 180;
+		timerMax_ = timer_ = 60 * 60;
+		lifeMax_ = 300;
+
+		step_ = 0;
+		tmp_[0] = rand->GetReal(0, GM_PI_X2);
+		tmp_[1] = SystemUtility::RandDirection();
+		tmp_[2] = SystemUtility::RandDirection();
+	}
+	~Shinki_Spell2() {
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		//shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		//shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		objBoss->SetSpellBackground(false);
+		objBoss->SetChargeDuration(0);
+
+		g_spellBonusWait->End(this);
+	}
+
+	virtual void Activate() {
+		Stage_EnemyPhase::Activate();
+
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		parentEnemy_->SetPattern(nullptr);
+		parentEnemy_->rateShotDamage_ = 0;
+
+		g_spellBonusWait->Begin(this, 200000);
+	}
+
+	virtual void Update() {
+		GET_INSTANCE(RandProvider, rand);
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+
+		switch (step_) {
+		case 0:
+			if (frame_ == 90) {
+				Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
+				move->SetAtFrame(320, 80, 60, Math::Lerp::MODE_SMOOTH);
+				parentEnemy_->SetPattern(move);
+			}
+			else if (frame_ == 120) {
+				objBoss->SetSpellBackground(true);
+			}
+			else if (frame_ == 180) {
+				objBoss->rateShotDamage_ = 1;
+
+				step_ = 1;
+				frame_ = 0;
+			}
+			break;
+		case 1:
+		{
+			size_t eFrame = frame_ - 1;
+			if (eFrame == 0) {
+				objBoss->SetChargeType(0);
+				objBoss->SetChargeDuration(60 * 6);
+			}
+
+			if (eFrame < 60 * 7) {
+				if (eFrame >= 40) {
+					//if (eFrame % 2 == 0) {
+						for (int p = 0; p < 2; ++p) {
+							int dir = p * 2 - 1;
+							float oy = 192 * sinf(tmp_[0]);
+							for (int i = 0; i < 1; ++i) {
+								auto shot = shotManager->AddEnemyShot(
+									D3DXVECTOR2(320, 240) + D3DXVECTOR2(316 * dir, oy * dir),
+									rand->GetReal(1.5, 2),
+									rand->GetReal(-GM_PI_2, GM_PI_2) * 0.92f + (p * GM_DTORA(180)),
+									p ? ShotConst::RedFire : ShotConst::WhiteFire, 16,
+									p ? IntersectPolarity::Black : IntersectPolarity::White);
+								shot->SetRenderPriority(LAYER_SHOT - 1);
+								shot->SetBlendType(BlendMode::Add);
+							}
+						}
+					//}
+					tmp_[0] += GM_DTORA(1) * tmp_[1];
+				}
+
+				if (eFrame >= 40 + 90 && (eFrame - 130) % 60 == 0) {
+					double iniAngle = rand->GetReal(0, GM_PI_X2);
+
+					for (int i = 0; i < 24; ++i) {
+						bool bPolar = rand->GetInt() % 2 == 0;
+						double sa = iniAngle + GM_PI_X2 / 24 * i;
+						auto shot = shotManager->AddEnemyShot(OffsetPos(parentEnemy_->GetMovePosition(), sa, -64),
+							4, sa,
+							bPolar ? ShotConst::RedRingBallM : ShotConst::WhiteRingBallM, 16,
+							bPolar ? IntersectPolarity::Black : IntersectPolarity::White);
+						{
+							//double angV = rand->GetReal(3, 6);
+							double angV = 3.6;
+							auto pattern = new Stage_MovePatternAngle(shot.get());
+							pattern->SetSpeed(Stage_MovePattern::NO_CHANGE);
+							pattern->SetDirectionAngleDirect(Stage_MovePattern::NO_CHANGE);
+							pattern->angularVelocity_ = GM_DTORA(bPolar ? angV : -angV) * tmp_[2];
+							shot->AddPattern(12, shared_ptr<Stage_MovePattern>(pattern));
+						}
+						{
+							auto pattern = new Stage_MovePatternAngle(shot.get());
+							pattern->SetSpeed(Stage_MovePattern::NO_CHANGE);
+							pattern->acceleration_ = -2 / 30.0;
+							pattern->maxSpeed_ = 2;
+							pattern->SetDirectionAngleDirect(Stage_MovePattern::NO_CHANGE);
+							shot->AddPattern(30, shared_ptr<Stage_MovePattern>(pattern));
+						}
+					}
+					tmp_[2] = -tmp_[2];
+				}
+			}
+			else if (eFrame == 60 * 7 + 80) {
+				tmp_[0] = rand->GetReal(0, GM_PI_X2);
+				tmp_[1] = SystemUtility::RandDirection();
+
+				step_ = 1;
+				frame_ = 0;
+			}
+
+			break;
+		}
+		}
+
+		Stage_EnemyPhase::Update();
+	}
+};
+
+//----------------------------------------------------------------------------------------------------------
+
+class Shinki_DeadTask : public Stage_EnemyPhase {
+	friend class EnemyBoss_Shinki;
+private:
+	struct ParticleData {
+		D3DXVECTOR2 pos;
+		float speed;
+		float angle;
+		D3DXVECTOR2 angleZ;
+		float scale;
+		size_t frame;
+		size_t frameEnd;
+	};
+	class Particle : public TaskBase {
+	private:
+		Sprite2D objEffect_;
+		D3DXVECTOR2 pos_;
+		D3DXVECTOR2 move_;
+		D3DXVECTOR3 angle_;
+		D3DXVECTOR3 angleAdd_;
+		float scale_;
+		size_t frameMain_;
+	public:
+		Particle(Scene* parent, CD3DXVECTOR2 pos, CD3DXVECTOR2 move, CD3DXVECTOR3 angle, 
+			CD3DXVECTOR3 angleAdd, float scale, D3DCOLOR color, size_t frameEnd) : TaskBase(parent)
+		{
+			GET_INSTANCE(ResourceManager, resourceManager);
+
+			auto textureParticle = resourceManager->GetResourceAs<TextureResource>("img/system/eff_particle.png");
+			objEffect_.SetTexture(textureParticle);
+			objEffect_.SetSourceRect(DxRectangle<int>(0, 0, 64, 64));
+			objEffect_.SetDestCenter();
+			objEffect_.UpdateVertexBuffer();
+
+			objEffect_.SetColor(color);
+			objEffect_.SetScale(scale, scale, 1);
+
+			objEffect_.SetBlendType(BlendMode::Add);
+
+			pos_ = pos;
+			move_ = move;
+			angle_ = angle;
+			angleAdd_ = angleAdd;
+			scale_ = scale;
+			frameMain_ = frameEnd;
+			frameEnd_ = frameMain_ + 20 + 12;
+		}
+
+		virtual void Render(byte layer) {
+			if (layer != LAYER_EX_UI - 1) return;
+			objEffect_.Render();
+		}
+		virtual void Update() {
+			if (frame_ < 12) {
+				float tmp = frame_ / 11.0f;
+				objEffect_.SetAlpha(tmp * 255);
+			}
+			else if (frame_ >= 12 + frameMain_) {
+				float tmp = (frame_ - (12 + frameMain_)) / 20.0f;
+				float tmp_s = Math::Lerp::Smooth<float>(scale_, 0, tmp);
+				objEffect_.SetScale(tmp_s, tmp_s, 1);
+				objEffect_.SetAlpha((1 - tmp) * 255);
+			}
+
+			objEffect_.SetPosition(pos_);
+			objEffect_.SetAngle(angle_);
+
+			pos_ += D3DXVECTOR2(cosf(move_[1]), sinf(move_[1])) * move_[0];
+			angle_ += angleAdd_;
+			++frame_;
+		}
+	};
+
+	D3DXVECTOR2 posBoss_;
+public:
+	Shinki_DeadTask(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
+		GET_INSTANCE(RandProvider, rand);
+	
+		lifeMax_ = 100000;
+		timer_ = 150;
+	}
+
+	virtual void Activate() {
+		Stage_EnemyPhase::Activate();
+
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		objBoss->SetSpellBackground(false);
+		objBoss->SetChargeDuration(0);
+
+		objBoss->SetPattern(nullptr);
+		objBoss->rateShotDamage_ = 0;
+
+		objBoss->life_ = 0;
+
+		posBoss_ = objBoss->GetMovePosition();
+	}
+
+	virtual void Update() {
+		GET_INSTANCE(RandProvider, rand);
+
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+
+		if (frame_ == 0) {
+			Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
+			move->SetAtFrame(posBoss_.x + rand->GetReal(-48, 48), posBoss_.y + rand->GetReal(-24, 64), 
+				100, Math::Lerp::MODE_DECELERATE);
+			parentEnemy_->SetPattern(move);
+
+			parent_->AddTask(new SystemEffects::Explosion(parent_, objBoss->GetMovePosition(), 
+				256, D3DCOLOR_XRGB(216, 115, 117), 45));
+		}
+		if (frame_ <= 70) {
+			float radius = Math::Lerp::Accelerate(64, 1000, frame_ / 70.0);
+			shotManager->DeleteInCircle(ShotOwnerType::Enemy, posBoss_.x, posBoss_.y, radius, true);
+		}
+		if (frame_ == 110) {
+			objBoss->SetChargeType(0);
+			objBoss->SetChargeDuration(0);
+		}
+
+		{
+			D3DXVECTOR2 pos = objBoss->GetMovePosition();
+			auto _AddParticle = [&](CD3DXVECTOR2 rndPos, float speed, float scale, D3DCOLOR color, size_t life) {
+				constexpr float spin = GM_DTORA(3);
+				parent_->AddTask(new Particle(parent_, pos + rndPos, D3DXVECTOR2(speed, rand->GetReal(0, GM_PI_X2)),
+					D3DXVECTOR3(rand->GetReal(0, GM_PI_X2), rand->GetReal(0, GM_PI_X2), rand->GetReal(0, GM_PI_X2)),
+					D3DXVECTOR3(rand->GetReal(-spin, spin), rand->GetReal(-spin, spin), rand->GetReal(-spin, spin)),
+					scale, color, life));
+			};
+
+			
+			if (frame_ == 0) {
+				for (int i = 0; i < 24; ++i) {
+					_AddParticle(D3DXVECTOR2(rand->GetReal(-8, 8), rand->GetReal(-8, 8)),
+						rand->GetReal(2.4, 4), rand->GetReal(1, 1.7), 0xffffff, rand->GetInt(80, 100));
+				}
+			}
+			if (frame_ < 140) {
+				_AddParticle(D3DXVECTOR2(rand->GetReal(-8, 8), rand->GetReal(-8, 8)),
+					rand->GetReal(3.2, 4.3), rand->GetReal(0.7, 1.25), 0xffffff, rand->GetInt(45, 60));
+			}
+			if (frame_ == 150) {
+				for (int i = 0; i < 64; ++i) {
+					_AddParticle(D3DXVECTOR2(rand->GetReal(-12, 12), rand->GetReal(-12, 12)),
+						rand->GetReal(1.3, 5), rand->GetReal(0.8, 2), D3DCOLOR_XRGB(255, 32, 32), rand->GetInt(80, 150));
+				}
+			}
+		}
+		
+		if (timer_ == 0) {
+			parent_->AddTask(new SystemEffects::Explosion(parent_, objBoss->GetMovePosition(), 
+				400, D3DCOLOR_XRGB(255, 255, 255), 65));
+
+			bFinish_ = true;
+		}
+		--timer_;
+		++frame_;
+	}
+};
+
 //*******************************************************************
 //EnemyBoss_Shinki
 //*******************************************************************
@@ -480,10 +981,14 @@ EnemyBoss_Shinki::EnemyBoss_Shinki(Scene* parent) : Stage_EnemyTask_Scripted(par
 		std::list<shared_ptr<Stage_EnemyPhase>> listPhase;
 
 		//listPhase.push_back(shared_ptr<Shinki_Non1>(new Shinki_Non1(parent_, this)));
-		listPhase.push_back(shared_ptr<Shinki_Spell1>(new Shinki_Spell1(parent_, this)));
+		//listPhase.push_back(shared_ptr<Shinki_Spell1>(new Shinki_Spell1(parent_, this)));
+		listPhase.push_back(shared_ptr<Shinki_Spell2>(new Shinki_Spell2(parent_, this)));
+		listPhase.push_back(shared_ptr<Shinki_DeadTask>(new Shinki_DeadTask(parent_, this)));
 
 		InitializePhases(listPhase);
 	}
+
+	g_spellBonusWait->Init((Stage_MainScene*)parent_);
 }
 
 void EnemyBoss_Shinki::_RunAnimation() {
@@ -581,6 +1086,12 @@ void EnemyBoss_Shinki::Update() {
 		}
 	}
 
+	if (IsAllPhasesFinished()) {
+		if (pTaskCircle_) pTaskCircle_->bEnd_ = true;
+		if (pTaskLifebar_) pTaskLifebar_->frameEnd_ = 0;
+		frameEnd_ = 0;
+	}
+
 	_Move();
 	_RunAnimation();
 
@@ -656,15 +1167,15 @@ void Boss_MagicCircle::Update() {
 	}
 	else {
 		if (frameEnd_ == UINT_MAX) {
-			frameEnd_ = 90;
+			frameEnd_ = 40;
 			frame_ = 0;
 			tScale_[1] = tScale_[0];
 			tAlpha_[1] = tAlpha_[0];
 		}
 
-		double rate = frame_ / 89.0;
+		double rate = frame_ / 39.0;
 		tScale_[0] = Math::Lerp::Accelerate<double>(tScale_[1], 0, rate);
-		tAlpha_[0] = Math::Lerp::Smooth<double>(tAlpha_[2], 0, rate);
+		tAlpha_[0] = Math::Lerp::Smooth<double>(tAlpha_[1], 0, rate);
 	}
 
 	{
@@ -676,7 +1187,8 @@ void Boss_MagicCircle::Update() {
 		objCircle_.SetAngle(angleX, GM_DTORA(33) * angleY * angleY, angleZ);
 	}
 
-	objCircle_.SetPosition(objBoss_->GetMovePosition());
+	if (!bEnd_)
+		objCircle_.SetPosition(objBoss_->GetMovePosition());
 	objCircle_.SetScale(tScale_[0], tScale_[0], 1.0f);
 	objCircle_.SetAlpha(tAlpha_[0] * 128);
 
