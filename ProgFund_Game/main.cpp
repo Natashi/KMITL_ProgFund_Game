@@ -129,8 +129,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 							accum_update = 0;
 
-							//if (!sceneManager->IsAnyActive())
-							if (valueManager->GetValue("GameEnd") != nullptr)
+							if (!sceneManager->IsAnyActive())
 								msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
 						}
 
