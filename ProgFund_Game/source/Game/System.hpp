@@ -32,9 +32,6 @@ public:
 
 		resourceManager->LoadResource<TextureResource>("resource/img/system/eff_burst.png", "img/system/eff_burst.png");
 		resourceManager->LoadResource<TextureResource>("resource/img/system/eff_particle.png", "img/system/eff_particle.png");
-
-		resourceManager->LoadResource<TextureResource>("resource/img/system/pause_back.png", "img/system/pause_back.png");
-		resourceManager->LoadResource<TextureResource>("resource/img/system/pause_items.png", "img/system/pause_items.png");
 	}
 
 	static DxRectangle<int> GetAsciiRect(char ch, int rect_w = 16, int rect_h = 16) {
