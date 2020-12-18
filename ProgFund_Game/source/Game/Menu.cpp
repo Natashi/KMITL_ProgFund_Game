@@ -45,7 +45,7 @@ namespace MenuParams {
 
 CONSTRUCT_TASK(Menu_SplashTask) {
 	frameEnd_ = MenuParams::SPLASH_SINGLESEQ + 30;
-	frameOff_ = 120;
+	frameOff_ = 60;
 
 	objSplash_.SetPosition(320, 240, 1);
 }
