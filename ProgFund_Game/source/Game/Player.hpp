@@ -1,6 +1,8 @@
 #pragma once
 #include "../../pch.h"
 
+#include "Score.hpp"
+
 #include "System.hpp"
 #include "ObjMove.hpp"
 #include "Intersection.hpp"
@@ -11,11 +13,6 @@ class Player_HitboxTask;
 class Player_BarrierTask;
 class Player_OptionTask;
 
-struct PlayerStats {
-	uint64_t score = 0;
-	uint32_t totalAbsorb = 0;
-	uint32_t maxAbsorb = 0;
-};
 struct PlayerData {
 	PlayerStats stat;
 
@@ -44,10 +41,17 @@ public:
 	static constexpr const int POLARITY_COOLDOWN_FRAME = 15;	//Switch cooldown
 	static constexpr const double POLARITY_INC_STEP = (1 + POLARITY_SWITCH) / (double)(POLARITY_SWITCH_TIME);
 	static constexpr const double POLARITY_COOLDOWN = POLARITY_INC_STEP * POLARITY_COOLDOWN_FRAME;
+public:
+	enum class State : byte {
+		Normal,
+		Down,
+		End,
+	};
 private:
 	weak_ptr<Stage_PlayerTask> pOwnRefWeak_;
 
 	PlayerData playerData_;
+	State playerState_;
 
 	Sprite2D objSprite_;
 	int frameAnimLeft_;
@@ -82,6 +86,7 @@ public:
 	virtual void Update();
 
 	PlayerData* GetPlayerData() { return &playerData_; }
+	State GetPlayerState() { return playerState_; }
 
 	//-1.0 <-------- 0.0 --------> 1.0
 	//Black                      White
@@ -96,7 +101,8 @@ public:
 
 	void SetClip(const DxRectangle<int>& clip) { rcClip_ = clip; }
 
-	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget);
+	virtual void Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget);
+	void AddScore(int64_t adding);
 };
 
 class Stage_IntersectionTarget_Player : public Stage_IntersectionTarget_Circle {

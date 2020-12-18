@@ -56,6 +56,7 @@ public:
 
 	bool IsDelete() { return bDelete_; }
 	bool IsAutoDelete() { return bAutoDelete_; }
+	bool IsToBeDeleted() { return bDelete_ || (bAutoDelete_ && GetTaskCount() == 0); }
 
 	void SetType(Type t) { type_ = t; }
 	Type GetType() { return type_; }

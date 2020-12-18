@@ -9,6 +9,7 @@
 //*******************************************************************
 CONSTRUCT_TASK(Stage_PlayerTask) {
 	playerData_.life = 4;
+	playerState_ = State::Normal;
 
 	rcClip_ = DxRectangle<int>(0, 0, 640, 480);
 
@@ -190,6 +191,7 @@ void Stage_PlayerTask::_RunAnimation() {
 }
 void Stage_PlayerTask::_Shoot() {
 	GET_INSTANCE(InputManager, inputManager);
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
 
 	KeyState stateShot = inputManager->GetKeyState(VirtualKey::Shot);
 
@@ -215,6 +217,8 @@ void Stage_PlayerTask::_Shoot() {
 		if (frame_ % 6 == 0) {
 			AddShot(-1, D3DXVECTOR2(10, 32), 48, 0, ShotPlayerConst::Main, 2);
 			AddShot(-1, D3DXVECTOR2(-10, 32), 48, 0, ShotPlayerConst::Main, 2);
+
+			soundLib->PlaySE("plshot", 20);
 		}
 
 		if (!bFocus_) {
@@ -264,6 +268,9 @@ void Stage_PlayerTask::_ChangePolarity() {
 	parent_->AddTask(taskBarrier_);
 }
 void Stage_PlayerTask::_Death() {
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
+	soundLib->PlaySE("playerdown");
+
 	frameInvincibility_ = IFRAME_DEATH;
 
 	playerData_.countAbsorb = 0;
@@ -273,11 +280,35 @@ void Stage_PlayerTask::_Death() {
 	playerData_.life -= 1;
 
 	parent_->AddTask(new Player_DeadManagerTask(parent_));
+
+	if (playerData_.life < 0) {
+		playerState_ = State::End;
+
+		if (taskHitbox_[0]) {
+			taskHitbox_[0]->bEnd_ = true;
+			taskHitbox_[1]->bEnd_ = true;
+			taskHitbox_[0] = nullptr;
+			taskHitbox_[1] = nullptr;
+		}
+		if (taskOption_[0]) {
+			taskOption_[0]->bEnd_ = true;
+			taskOption_[1]->bEnd_ = true;
+			taskOption_[0] = nullptr;
+			taskOption_[1] = nullptr;
+		}
+		if (taskBarrier_) {
+			taskBarrier_->bEnd_ = true;
+			taskBarrier_ = nullptr;
+		}
+	}
 }
 
 void Stage_PlayerTask::Render(byte layer) {
 	if (layer != LAYER_PLAYER) return;
-	objSprite_.Render();
+
+	if (playerState_ == State::Normal) {
+		objSprite_.Render();
+	}
 }
 void Stage_PlayerTask::Update() {
 	GET_INSTANCE(InputManager, inputManager);
@@ -289,102 +320,109 @@ void Stage_PlayerTask::Update() {
 	bFocus_ = stateSlow == KeyState::Push || stateSlow == KeyState::Hold;
 
 	//Update movement
-	_Move();
-	objSprite_.SetPosition(roundf(posX_), roundf(posY_), 1.0f);
+	if (playerState_ == State::Normal) {
+		_Move();
+		objSprite_.SetPosition(roundf(posX_), roundf(posY_), 1.0f);
 
-	//Update player animation
-	_RunAnimation();
+		//Update player animation
+		_RunAnimation();
 
-	//Shoot stuff
-	_Shoot();
-	
-	//Increase multiplier
-	{
-		if (frameInvincibility_ == 0 && frame_ % 15 == 0) {
-			if (playerData_.scoreMultiplier < 64)
-				playerData_.scoreMultiplier += 0.1;
-		}
-	}
+		//Shoot stuff
+		_Shoot();
 
-	//Change polarity
-	{
-		if ((stateSpell == KeyState::Push) && (abs(scalePolarity_) >= POLARITY_COOLDOWN))
-			_ChangePolarity();
-
-		scalePolarity_ += POLARITY_INC_STEP * tendencyPolarity_;
-	}
-
-	//Load intersection
-	{
-		auto intersectionManager = ((Stage_MainScene*)parent_)->GetIntersectionManager();
-
-		//Graze
+		//Increase multiplier
 		{
-			auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(true));
-			pTarget->SetParent(pOwnRefWeak_);
-			pTarget->SetCircle(DxCircle<float>(posX_, posY_,
-				frameInvincibility_ == 0 ? BARRIER_SIZE : BARRIER_SIZE_MIN));
-			pTarget->SetIntersectionSpace();
-			intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
-		}
-
-		//Hit
-		if (frameInvincibility_ == 0) {
-			auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(false));
-			pTarget->SetParent(pOwnRefWeak_);
-			pTarget->SetCircle(DxCircle<float>(posX_, posY_, HITBOX_SIZE));
-			pTarget->SetIntersectionSpace();
-			intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
-		}
-	}
-	if (frameInvincibility_ > 0) --frameInvincibility_;
-
-	//Run hitbox graphic tasks
-	{
-		/*
-		if (bFocus_) {
-			if (*taskHitbox_ == nullptr) {
-				taskHitbox_[0] = shared_ptr<Player_HitboxTask>(
-					new Player_HitboxTask(parent_, 255, 160, 0.3, 12, -180, 180, 3));
-				taskHitbox_[1] = shared_ptr<Player_HitboxTask>(
-					new Player_HitboxTask(parent_, 0, 255, 1.2, 18, 0, 0, -2));
-
-				parent_->AddTask(taskHitbox_[0]);
-				parent_->AddTask(taskHitbox_[1]);
+			if (frameInvincibility_ == 0 && frame_ % 20 == 0) {
+				//Multiplier would take (((16 - 1) / 0.1) * 20) = 3000 frames (50 seconds) to increase to full
+				if (playerData_.scoreMultiplier < 16)
+					playerData_.scoreMultiplier += 0.1;
 			}
 		}
-		else {
-			if (*taskHitbox_ != nullptr) {
-				taskHitbox_[0]->bEnd_ = true;
-				taskHitbox_[1]->bEnd_ = true;
 
-				taskHitbox_[0] = nullptr;		//Removes a reference
-				taskHitbox_[1] = nullptr;
+		//Change polarity
+		{
+			if ((stateSpell == KeyState::Push) && (abs(scalePolarity_) >= POLARITY_COOLDOWN)) {
+				_ChangePolarity();
+
+				GET_INSTANCE(ScriptSoundLibrary, soundLib);
+				soundLib->PlaySE("switch", 70);
+			}
+
+			scalePolarity_ += POLARITY_INC_STEP * tendencyPolarity_;
+		}
+
+		//Load intersection
+		{
+			auto intersectionManager = ((Stage_MainScene*)parent_)->GetIntersectionManager();
+
+			//Graze
+			{
+				auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(true));
+				pTarget->SetParent(pOwnRefWeak_);
+				pTarget->SetCircle(DxCircle<float>(posX_, posY_,
+					frameInvincibility_ == 0 ? BARRIER_SIZE : BARRIER_SIZE_MIN));
+				pTarget->SetIntersectionSpace();
+				intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
+			}
+
+			//Hit
+			if (frameInvincibility_ == 0) {
+				auto pTarget = shared_ptr<Stage_IntersectionTarget_Player>(new Stage_IntersectionTarget_Player(false));
+				pTarget->SetParent(pOwnRefWeak_);
+				pTarget->SetCircle(DxCircle<float>(posX_, posY_, HITBOX_SIZE));
+				pTarget->SetIntersectionSpace();
+				intersectionManager->AddTarget(Stage_IntersectionTarget::TypeTarget::Player, pTarget);
 			}
 		}
-		*/
-	}
+		if (frameInvincibility_ > 0) --frameInvincibility_;
 
-	//Run option graphic tasks
-	{
-		if (*taskOption_ == nullptr) {
-			taskOption_[0] = shared_ptr<Player_OptionTask>(
-				new Player_OptionTask(parent_, D3DXVECTOR2(-36, 36), D3DXVECTOR2(-15, -32), 1));
-			taskOption_[1] = shared_ptr<Player_OptionTask>(
-				new Player_OptionTask(parent_, D3DXVECTOR2(36, 36), D3DXVECTOR2(15, -32), -1));
+		//Run hitbox graphic tasks
+		{
+			/*
+			if (bFocus_) {
+				if (*taskHitbox_ == nullptr) {
+					taskHitbox_[0] = shared_ptr<Player_HitboxTask>(
+						new Player_HitboxTask(parent_, 255, 160, 0.3, 12, -180, 180, 3));
+					taskHitbox_[1] = shared_ptr<Player_HitboxTask>(
+						new Player_HitboxTask(parent_, 0, 255, 1.2, 18, 0, 0, -2));
 
-			parent_->AddTask(taskOption_[0]);
-			parent_->AddTask(taskOption_[1]);
+					parent_->AddTask(taskHitbox_[0]);
+					parent_->AddTask(taskHitbox_[1]);
+				}
+			}
+			else {
+				if (*taskHitbox_ != nullptr) {
+					taskHitbox_[0]->bEnd_ = true;
+					taskHitbox_[1]->bEnd_ = true;
+
+					taskHitbox_[0] = nullptr;		//Removes a reference
+					taskHitbox_[1] = nullptr;
+				}
+			}
+			*/
+		}
+
+		//Run option graphic tasks
+		{
+			if (*taskOption_ == nullptr) {
+				taskOption_[0] = shared_ptr<Player_OptionTask>(
+					new Player_OptionTask(parent_, D3DXVECTOR2(-36, 36), D3DXVECTOR2(-15, -32), 1));
+				taskOption_[1] = shared_ptr<Player_OptionTask>(
+					new Player_OptionTask(parent_, D3DXVECTOR2(36, 36), D3DXVECTOR2(15, -32), -1));
+
+				parent_->AddTask(taskOption_[0]);
+				parent_->AddTask(taskOption_[1]);
+			}
 		}
 	}
 
 	++frame_;
 }
 
-void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget) {
+void Stage_PlayerTask::Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget) {
 	shared_ptr<Stage_ObjCollision> pOther = otherTarget->GetParent().lock();
 
-	if (auto pOwnTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(ownTarget.get())) {
+	if (auto pOwnTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(ownTarget)) {
 		switch (otherTarget->GetTargetType()) {
 		case Stage_IntersectionTarget::TypeTarget::EnemyToPlayer:
 			//if (auto pEnemy = dynamic_cast<Stage_IntersectionTarget_Player*>(ownTarget.get())) {
@@ -401,8 +439,7 @@ void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget,
 				}
 				else {
 					if (pShot->GetPolarity() == GetPolarity()) {
-						double mul = (int)(playerData_.scoreMultiplier * 10) / 10.0;	//Round to 1 decimal place
-						playerData_.stat.score += 100 * mul;
+						this->AddScore(100);
 
 						++(playerData_.countAbsorb);
 						++(playerData_.stat.totalAbsorb);
@@ -414,6 +451,10 @@ void Stage_PlayerTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget,
 			break;
 		}
 	}
+}
+void Stage_PlayerTask::AddScore(int64_t adding) {
+	double mul = (int)(playerData_.scoreMultiplier * 10) / 10.0;	//Round to 1 decimal place
+	playerData_.stat.score += adding * mul;
 }
 
 //*******************************************************************
@@ -675,6 +716,8 @@ void Player_OptionTask::Update() {
 Player_DeadManagerTask::Player_DeadManagerTask(Scene* parent) : TaskBase(parent) {
 }
 void Player_DeadManagerTask::Update() {
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
+
 	Stage_MainScene* stage = (Stage_MainScene*)parent_;
 	auto objPlayer = stage->GetPlayer();
 
@@ -690,6 +733,7 @@ void Player_DeadManagerTask::Update() {
 		posInvert = objPlayer->GetMovePosition();
 		parent_->AddTask(new Player_DeadCircleTask(parent_, posInvert));
 		parent_->AddTask(new Player_DeadParticleTask(parent_, posInvert));
+		soundLib->PlaySE("playerdown");
 		break;
 	case WT_1:
 		posInvert = objPlayer->GetMovePosition();

@@ -8,13 +8,15 @@
 class Spell_BonusScoreText : public TaskBase {
 	StaticRenderObject2D objHeader_;
 	StaticRenderObject2D objScore_;
+	bool bBigBonus_;
 public:
 	Spell_BonusScoreText(Scene* parent, const std::string& header, uint64_t bonus,
-		const DxRectangle<float>& rcDst, D3DCOLOR colTop, D3DCOLOR colBot) : TaskBase(parent) 
+		const DxRectangle<float>& rcDst, D3DCOLOR colTop, D3DCOLOR colBot, bool bBigBonus) : TaskBase(parent) 
 	{
 		GET_INSTANCE(ResourceManager, resourceManager);
 
 		frameEnd_ = 180;
+		bBigBonus_ = bBigBonus;
 
 		VertexTLX verts[4];
 		std::vector<VertexTLX> vertex;
@@ -114,6 +116,14 @@ public:
 		objScore_.Render();
 	}
 	virtual void Update() {
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		if (bBigBonus_) {
+			if (frame_ == 0)
+				soundLib->PlaySE("capture");
+			else if (frame_ == 20)
+				soundLib->PlaySE("bonus");
+		}
+
 		if (frame_ < 20) {
 			float tmp = frame_ / 19.0f;
 			float tmp_s = Math::Lerp::Smooth<double>(0, 1, tmp);
@@ -173,19 +183,21 @@ public:
 		//The player must not have lost a life, and the attack must have been shot down before its timer ran out.
 		if (playerLifeNow >= playerLifePrev_ && (pPhase->timerMax_ == -1 || pPhase->timer_ > 0)) {
 			addingBonus = bonus_;
-			if (pPhase->timerMax_ > 0)
-				addingBonus = bonus_ * (pPhase->timer_ / (double)pPhase->timerMax_);
+			if (pPhase->timerMax_ > 0) {
+				addingBonus = bonus_ * (0.2 + (pPhase->timer_ / (double)pPhase->timerMax_) * 0.8);
+				addingBonus = std::max(addingBonus, 25000U);
+			}
 
 			addingBonus *= mul;
 
 			stageUI->AddTask(new Spell_BonusScoreText(stageUI.get(), "Spell Bonus Get!", addingBonus,
-				DxRectangle<int>(), D3DCOLOR_XRGB(246, 212, 101), 0xffffffff));
+				DxRectangle<int>(), D3DCOLOR_XRGB(246, 212, 101), 0xffffffff, true));
 		}
 		else {		//Fonus Bailed
 			addingBonus = 10000 * mul;
 
 			stageUI->AddTask(new Spell_BonusScoreText(stageUI.get(), "Bonus Failed...", addingBonus,
-				DxRectangle<int>(), 0xffffffff, D3DCOLOR_XRGB(186, 182, 200)));
+				DxRectangle<int>(), 0xffffffff, D3DCOLOR_XRGB(186, 182, 200), false));
 		}
 
 		objPlayer->GetPlayerData()->stat.score += addingBonus;
@@ -203,7 +215,7 @@ public:
 	Shinki_Non1(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
 		timerDelay_ = 120;
 		timerMax_ = timer_ = 30 * 60;
-		lifeMax_ = 2600;
+		lifeMax_ = 3400;
 
 		step_ = 0;
 		tmpS_[0] = SystemUtility::RandDirection();
@@ -214,9 +226,8 @@ public:
 		objEnemy->rateShotDamage_ = 0;
 	}
 	~Shinki_Non1() {
-		Stage_MainScene* stage = (Stage_MainScene*)parent_;
-		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
-		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Activate() {
@@ -235,6 +246,7 @@ public:
 
 	virtual void Update() {
 		GET_INSTANCE(RandProvider, rand);
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
 		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
@@ -254,6 +266,8 @@ public:
 				objBoss->SetChargeDuration(24 * 2);
 				tmpD_[0] = rand->GetReal(0, GM_PI_X2);
 				tmpD_[1] = 0;
+
+				soundLib->PlaySE("charge");
 			}
 
 			if (eFrame % 2 == 0) {
@@ -267,6 +281,7 @@ public:
 						bPolar ? ShotConst::RedBallM : ShotConst::WhiteBallM, 8,
 						bPolar ? IntersectPolarity::Black : IntersectPolarity::White);
 				}
+				soundLib->PlaySE("shot1", 70);
 				tmpD_[1] += GM_DTORA(1.32) * tmpS_[0];
 			}
 
@@ -350,6 +365,7 @@ public:
 					}
 				}
 
+				soundLib->PlaySE("shot2", 90);
 				++iFan;
 			}
 
@@ -434,6 +450,8 @@ private:
 			objCircle_.Render();
 		}
 		virtual void Update() {
+			GET_INSTANCE(ScriptSoundLibrary, soundLib);
+
 			if (!bEnd_) {
 				if (frame_ < 60) {
 					double tmp = frame_ / 59.0;
@@ -469,6 +487,8 @@ private:
 							9, angle_[2],
 							!bWhite_ ? ShotConst::RedBullet : ShotConst::WhiteBullet, 4,
 							!bWhite_ ? IntersectPolarity::Black : IntersectPolarity::White);
+
+						soundLib->PlaySE("shot2", 30);
 					}
 				}
 			}
@@ -497,16 +517,12 @@ public:
 	Shinki_Spell1(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
 		timerDelay_ = 180;
 		timerMax_ = timer_ = 46 * 60;
-		lifeMax_ = 3100;
+		lifeMax_ = 6000;
 
 		step_ = 0;
 		tmp_[0] = 1;
 	}
 	~Shinki_Spell1() {
-		Stage_MainScene* stage = (Stage_MainScene*)parent_;
-		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
-		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
-
 		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
 		objBoss->SetSpellBackground(false);
 
@@ -514,19 +530,27 @@ public:
 			iObj->bEnd_ = true;
 
 		g_spellBonusWait->End(this);
+
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Activate() {
 		Stage_EnemyPhase::Activate();
 
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+
 		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
 		parentEnemy_->SetPattern(nullptr);
 		parentEnemy_->rateShotDamage_ = 0;
 
-		g_spellBonusWait->Begin(this, 100000);
+		g_spellBonusWait->Begin(this, 300000);
 	}
 
 	virtual void Update() {
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
 		GET_INSTANCE(RandProvider, rand);
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
@@ -543,6 +567,8 @@ public:
 				objBoss->SetSpellBackground(true);
 				objBoss->rateShotDamage_ = 1;
 
+				soundLib->PlaySE("spellcard");
+
 				auto objPlayer = stage->GetPlayer();
 
 				double randAng = GM_DTORA(rand->GetReal(-2, 2));
@@ -556,6 +582,9 @@ public:
 					iObj->angle_[0] += randAng;
 					parent_->AddTask(iObj);
 				}
+			}
+			else if (frame_ == 200) {
+				soundLib->PlaySE("boon1");
 			}
 			else if (frame_ == 250) {
 				step_ = 1;
@@ -597,6 +626,8 @@ public:
 					pattern->SetDirectionAngleDirect(Stage_MovePattern::NO_CHANGE);
 					shot->AddPattern(8, shared_ptr<Stage_MovePattern>(pattern));
 				}
+
+				soundLib->PlaySE("shot1");
 			}
 
 			if (eFrame > 0 && eFrame % 50 == 0 && eFrame <= 250) {
@@ -630,6 +661,8 @@ public:
 						bWhite ? ShotConst::WhiteBallL : RedBallL, 16,
 						bWhite ? IntersectPolarity::White : IntersectPolarity::Black);
 				}
+
+				soundLib->PlaySE("shot3", 80);
 			}
 
 			if (eFrame == 40 * 10 + 160) {
@@ -656,7 +689,7 @@ public:
 
 		timerDelay_ = 180;
 		timerMax_ = timer_ = 60 * 60;
-		lifeMax_ = 300;
+		lifeMax_ = 5500;
 
 		step_ = 0;
 		tmp_[0] = rand->GetReal(0, GM_PI_X2);
@@ -673,19 +706,27 @@ public:
 		objBoss->SetChargeDuration(0);
 
 		g_spellBonusWait->End(this);
+
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		//soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Activate() {
 		Stage_EnemyPhase::Activate();
 
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+
 		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
 		parentEnemy_->SetPattern(nullptr);
 		parentEnemy_->rateShotDamage_ = 0;
 
-		g_spellBonusWait->Begin(this, 200000);
+		g_spellBonusWait->Begin(this, 500000);
 	}
 
 	virtual void Update() {
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
 		GET_INSTANCE(RandProvider, rand);
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
 		shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
@@ -700,6 +741,8 @@ public:
 			}
 			else if (frame_ == 120) {
 				objBoss->SetSpellBackground(true);
+
+				soundLib->PlaySE("spellcard");
 			}
 			else if (frame_ == 180) {
 				objBoss->rateShotDamage_ = 1;
@@ -735,6 +778,8 @@ public:
 						}
 					//}
 					tmp_[0] += GM_DTORA(1) * tmp_[1];
+
+					soundLib->PlaySE("shot1", 65);
 				}
 
 				if (eFrame >= 40 + 90 && (eFrame - 130) % 60 == 0) {
@@ -766,6 +811,8 @@ public:
 						}
 					}
 					tmp_[2] = -tmp_[2];
+
+					soundLib->PlaySE("shot2", 80);
 				}
 			}
 			else if (eFrame == 60 * 7 + 80) {
@@ -883,6 +930,7 @@ public:
 	}
 
 	virtual void Update() {
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
 		GET_INSTANCE(RandProvider, rand);
 
 		Stage_MainScene* stage = (Stage_MainScene*)parent_;
@@ -897,10 +945,15 @@ public:
 
 			parent_->AddTask(new SystemEffects::Explosion(parent_, objBoss->GetMovePosition(), 
 				256, D3DCOLOR_XRGB(216, 115, 117), 45));
+
+			soundLib->PlaySE("flare");
 		}
 		if (frame_ <= 70) {
 			float radius = Math::Lerp::Accelerate(64, 1000, frame_ / 70.0);
 			shotManager->DeleteInCircle(ShotOwnerType::Enemy, posBoss_.x, posBoss_.y, radius, true);
+		}
+		if (frame_ == 90) {
+			soundLib->PlaySE("charge");
 		}
 		if (frame_ == 110) {
 			objBoss->SetChargeType(0);
@@ -941,6 +994,8 @@ public:
 				400, D3DCOLOR_XRGB(255, 255, 255), 65));
 
 			bFinish_ = true;
+
+			soundLib->PlaySE("bossdown");
 		}
 		--timer_;
 		++frame_;
@@ -978,10 +1033,16 @@ EnemyBoss_Shinki::EnemyBoss_Shinki(Scene* parent) : Stage_EnemyTask_Scripted(par
 	}
 
 	{
+		auto music = ((Stage_MainScene*)parent_)->GetBGM();
+		music->GetData()->Play();
+		music->GetData()->SetVolumeRate(100);
+	}
+
+	{
 		std::list<shared_ptr<Stage_EnemyPhase>> listPhase;
 
-		//listPhase.push_back(shared_ptr<Shinki_Non1>(new Shinki_Non1(parent_, this)));
-		//listPhase.push_back(shared_ptr<Shinki_Spell1>(new Shinki_Spell1(parent_, this)));
+		listPhase.push_back(shared_ptr<Shinki_Non1>(new Shinki_Non1(parent_, this)));
+		listPhase.push_back(shared_ptr<Shinki_Spell1>(new Shinki_Spell1(parent_, this)));
 		listPhase.push_back(shared_ptr<Shinki_Spell2>(new Shinki_Spell2(parent_, this)));
 		listPhase.push_back(shared_ptr<Shinki_DeadTask>(new Shinki_DeadTask(parent_, this)));
 
@@ -1090,6 +1151,22 @@ void EnemyBoss_Shinki::Update() {
 		if (pTaskCircle_) pTaskCircle_->bEnd_ = true;
 		if (pTaskLifebar_) pTaskLifebar_->frameEnd_ = 0;
 		frameEnd_ = 0;
+
+		class WaitClose : public TaskBase {
+		public:
+			WaitClose(Scene* parent) : TaskBase(parent) {
+				frameEnd_ = 300;
+			}
+			~WaitClose() {
+				((Stage_MainScene*)parent_)->CloseStage();
+			}
+			virtual void Update() {
+				++frame_;
+			}
+		};
+		parent_->AddTask(new WaitClose(parent_));
+
+		return;
 	}
 
 	_Move();

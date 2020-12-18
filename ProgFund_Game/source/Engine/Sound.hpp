@@ -63,6 +63,12 @@ public:
 
 	void SetSource(std::ifstream* file) { file_ = file; }
 
+	void SetLoop(bool bEnable, int64_t start, int64_t end) {
+		bLoopEnable_ = bEnable;
+		sampleLoopStart_ = start;
+		sampleLoopEnd_ = end;
+	}
+
 	virtual bool Play();
 	virtual bool Pause();
 	virtual bool Stop();

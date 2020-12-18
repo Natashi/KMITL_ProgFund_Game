@@ -25,7 +25,7 @@ void Stage_EnemyTask::_RegistIntersection() {
 	this->UpdateRelativeTarget(posX_, posY_);
 }
 
-void Stage_EnemyTask::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget) {
+void Stage_EnemyTask::Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget) {
 	shared_ptr<Stage_ObjCollision> pOther = otherTarget->GetParent().lock();
 
 	switch (otherTarget->GetTargetType()) {

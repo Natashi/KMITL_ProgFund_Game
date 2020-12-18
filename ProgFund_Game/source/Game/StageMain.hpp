@@ -40,6 +40,8 @@ private:
 	shared_ptr<Stage_ShotManager> pTaskShotManager_;
 	shared_ptr<Stage_IntersectionManager> pTaskIntersectionManager_;
 
+	shared_ptr<SoundResource> bgmBoss_;
+
 	DxRectangle<int> rcStgFrame_;
 public:
 	Stage_MainScene(SceneManager* manager);
@@ -51,4 +53,8 @@ public:
 	shared_ptr<Stage_PlayerTask> GetPlayer() { return pTaskPlayer_; }
 	shared_ptr<Stage_ShotManager> GetShotManager() { return pTaskShotManager_; }
 	shared_ptr<Stage_IntersectionManager> GetIntersectionManager() { return pTaskIntersectionManager_; }
+
+	shared_ptr<SoundResource> GetBGM() { return bgmBoss_; }
+
+	void CloseStage();
 };

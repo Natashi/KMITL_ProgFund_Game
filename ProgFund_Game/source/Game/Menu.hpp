@@ -3,6 +3,7 @@
 
 #include "GConstant.hpp"
 
+#include "Score.hpp"
 #include "System.hpp"
 
 //Splash task
@@ -69,18 +70,16 @@ protected:
 	int selectIndex_;
 };
 
-class Menu_Child_OptionMenu_Item_Sound;
-class Menu_Child_OptionMenu_Item_Stat;
-class Menu_Child_OptionMenu : public TaskBase {
+struct PlayerStats;
+class Menu_PlayerDataTask : public TaskBase {
+private:
+	PlayerDataUtil::ScoreMap mapScore;
+	StaticRenderObject2D objHeader_;
+	std::vector<shared_ptr<StaticRenderObject2D>> listData_;
+	double tScale_;
 public:
-	Menu_Child_OptionMenu(Menu_MainScene* parent);
-	~Menu_Child_OptionMenu();
+	Menu_PlayerDataTask(Scene* parent);
 
 	virtual void Render(byte layer);
 	virtual void Update();
-protected:
-	std::vector<Menu_Child_OptionMenu_Item_Sound*> listOptionObjSound_;
-	std::vector<Menu_Child_OptionMenu_Item_Stat*> listOptionObjStat_;
-	bool flgGetInput_ = false;
-	int selectIndex_;
 };

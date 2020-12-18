@@ -31,8 +31,8 @@ void Stage_IntersectionManager::Update() {
 		for (size_t iCheck = 0; iCheck < countCheckThis; ++iCheck) {
 			Stage_IntersectionSpace::TargetCheckListPair& cTargetPair = listCheck->at(iCheck);
 
-			shared_ptr<Stage_IntersectionTarget> targetA = cTargetPair.first;
-			shared_ptr<Stage_IntersectionTarget> targetB = cTargetPair.second;
+			Stage_IntersectionTarget* targetA = cTargetPair.first;
+			Stage_IntersectionTarget* targetB = cTargetPair.second;
 			if (targetA == nullptr || targetB == nullptr) continue;
 
 			bool bIntersected = IsIntersected(targetA, targetB);
@@ -87,13 +87,8 @@ void Stage_IntersectionManager::AddTarget(Stage_IntersectionTarget::TypeTarget t
 		break;
 	}
 }
-bool Stage_IntersectionManager::IsIntersected(shared_ptr<Stage_IntersectionTarget>& target1, 
-	shared_ptr<Stage_IntersectionTarget>& target2) 
-{
-	if (target1 == nullptr || target2 == nullptr) return false;
-	Stage_IntersectionTarget* p1 = target1.get();
-	Stage_IntersectionTarget* p2 = target2.get();
-
+bool Stage_IntersectionManager::IsIntersected(Stage_IntersectionTarget* p1, Stage_IntersectionTarget* p2) {
+	if (p1 == nullptr || p2 == nullptr) return false;
 	{
 		Stage_IntersectionTarget_Circle* c1 = dynamic_cast<Stage_IntersectionTarget_Circle*>(p1);
 		Stage_IntersectionTarget_Circle* c2 = dynamic_cast<Stage_IntersectionTarget_Circle*>(p2);
@@ -131,7 +126,8 @@ Stage_IntersectionSpace::CreateIntersectionCheckList(Stage_IntersectionManager* 
 	if (pListTargetA->size() > 0 && pListTargetB->size() > 0) {
 		static std::mutex mtx;
 
-		auto CheckSpaceRect = [&](shared_ptr<Stage_IntersectionTarget>& targetA, shared_ptr<Stage_IntersectionTarget>& targetB) {
+		auto CheckSpaceRect = [&](Stage_IntersectionTarget* targetA, Stage_IntersectionTarget* targetB) {
+			if (targetA == nullptr || targetB == nullptr) return;
 			const DxRectangle<int>& boundA = targetA->GetIntersectionSpaceRect();
 			const DxRectangle<int>& boundB = targetB->GetIntersectionSpaceRect();
 
@@ -147,20 +143,20 @@ Stage_IntersectionSpace::CreateIntersectionCheckList(Stage_IntersectionManager* 
 		};
 
 		//Attempt to most efficiently utilize multithreading
-		if (pListTargetA->size() > pListTargetB->size()) {
+		if (pListTargetA->size() >= pListTargetB->size()) {
 			ParallelTask(pListTargetA->size(), [&](size_t iA) {
-				shared_ptr<Stage_IntersectionTarget>& pTargetA = pListTargetA->at(iA);
+				Stage_IntersectionTarget* pTargetA = pListTargetA->at(iA).get();
 				for (auto itrB = pListTargetB->begin(); itrB != pListTargetB->end(); ++itrB) {
-					shared_ptr<Stage_IntersectionTarget>& pTargetB = *itrB;
+					Stage_IntersectionTarget* pTargetB = itrB->get();
 					CheckSpaceRect(pTargetA, pTargetB);
 				}
 			});
 		}
 		else {
 			ParallelTask(pListTargetB->size(), [&](size_t iB) {
-				shared_ptr<Stage_IntersectionTarget>& pTargetB = pListTargetB->at(iB);
+				Stage_IntersectionTarget* pTargetB = pListTargetB->at(iB).get();
 				for (auto itrA = pListTargetA->begin(); itrA != pListTargetA->end(); ++itrA) {
-					shared_ptr<Stage_IntersectionTarget>& pTargetA = *itrA;
+					Stage_IntersectionTarget* pTargetA = itrA->get();
 					CheckSpaceRect(pTargetA, pTargetB);
 				}
 			});

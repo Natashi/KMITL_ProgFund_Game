@@ -55,6 +55,12 @@ void ResourceManager::Initialize() {
 			surfaceTmp->Release();
 		}
 		this->AddResource(textureEmpty_, "__TEXTURE_NULL__");
+
+		{
+			auto extRT = std::make_shared<TextureResource>();
+			extRT->CreateAsRenderTarget("__RTARGET_0__", 1024, 512);
+			this->AddResource(extRT, "__RTARGET_0__");
+		}
 	}
 	{
 		shaderDefault_ = this->LoadResource<ShaderResource>("resource/shader/default_2d.fx", "__SHADER_DEFAULT__");

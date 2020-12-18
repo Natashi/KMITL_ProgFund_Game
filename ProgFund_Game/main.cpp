@@ -6,6 +6,7 @@
 #include "source/Engine/Scene.hpp"
 
 #include "source/Game/Menu.hpp"
+#include "source/Game/Pause.hpp"
 #include "source/Game/StageMain.hpp"
 
 DWORD DxGetTime();
@@ -37,18 +38,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		SceneManager* sceneManager = new SceneManager();
 		sceneManager->Initialize();
 
+		ScriptSoundLibrary* soundLibrary = new ScriptSoundLibrary();
+
 		printf("Initialized application.\n");
 
 		{
-			
-			//shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
-			//menuScene->SetType(Scene::Type::Menu);
-			//sceneManager->AddScene(menuScene, Scene::Type::Menu);
-			
-			auto primaryScene = sceneManager->GetPrimaryScene();
-			auto taskStageLoad = shared_ptr<Stage_SceneLoader>(new Stage_SceneLoader(primaryScene.get()));
-			primaryScene->AddTask(taskStageLoad);
+			if (false) {
+				shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
+				menuScene->SetType(Scene::Type::Menu);
+				sceneManager->AddScene(menuScene, Scene::Type::Menu);
+			}
+			else {
+				shared_ptr<Pause_MainScene> pauseScene(new Pause_MainScene(sceneManager));
+				sceneManager->AddScene(pauseScene, Scene::Type::Pause);
 
+				auto primaryScene = sceneManager->GetPrimaryScene();
+				primaryScene->AddTask(new Stage_SceneLoader(primaryScene.get()));
+			}
+			
 			printf("Initialized game.\n");
 		}
 
@@ -98,6 +105,28 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 							*/
 							winMain->EndScene();
 
+							/*
+							{
+								auto textureRTFrame = resourceManager->GetResourceAs<TextureResource>("__RTARGET_0__");
+
+								IDirect3DDevice9* device = winMain->GetDevice();
+
+								winMain->BeginScene();
+								device->SetRenderTarget(0, textureRTFrame->GetSurface());
+								{
+									Sprite2D tmp;
+									tmp.SetTexture(device->GetTexture());
+									tmp.SetSourceRect(DxRectangle(0, 0, 640, 480));
+									tmp.SetDestRect(DxRectangle(0, 0, 640, 480));
+									tmp.UpdateVertexBuffer();
+
+									tmp.Render();
+								}
+								device->SetRenderTarget(0, winMain->GetBackBuffer());
+								winMain->EndScene();
+							}
+							*/
+
 							accum_update = 0;
 
 							//if (!sceneManager->IsAnyActive())
@@ -133,6 +162,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		ptr_release(randGenerator);
 		ptr_release(valueManager);
+		ptr_delete(soundLibrary);
 		ptr_release(resourceManager);
 		ptr_release(soundManager);
 		ptr_release(sceneManager);

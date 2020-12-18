@@ -2,6 +2,8 @@
 
 #include "StageMain.hpp"
 
+#include "Pause.hpp"
+
 #include "Player.hpp"
 #include "Shot.hpp"
 
@@ -37,6 +39,8 @@ CONSTRUCT_TASK(Stage_SceneLoader) {
 
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/background/bg_spell0.png", "img/stage/background/bg_spell0.png");
 		resourceManager->LoadResource<TextureResource>("resource/img/stage/background/bg_spell1.png", "img/stage/background/bg_spell1.png");
+
+		resourceManager->LoadResource<SoundResource>("resource/sound/music/bgm01.ogg", "sound/music/bgm01.ogg");
 
 		//Player
 		resourceManager->LoadResource<TextureResource>("resource/img/player/eff_base.png", "img/player/eff_base.png");
@@ -278,7 +282,6 @@ Stage_MainSceneUI::~Stage_MainSceneUI() {
 
 void Stage_MainSceneUI::Render() {
 	objFrame_.Render();
-
 	Scene::Render();
 }
 void Stage_MainSceneUI::Update() {
@@ -386,10 +389,19 @@ Stage_MainScene::Stage_MainScene(SceneManager* manager) : Scene(manager) {
 		sceneStage1BG->AddBackground("ST1_BOSS", 
 			shared_ptr<Boss_SpellBackground>(new Boss_SpellBackground(sceneStage1BG.get())));
 	}
+	{
+		bgmBoss_ = resourceManager->GetResourceAs<SoundResource>("sound/music/bgm01.ogg");
+		//bgmBoss_->Stop();
+		bgmBoss_->GetData()->SetVolumeRate(80);
+		bgmBoss_->GetData()->SetLoop(true, 305760, 7424736);
+	}
 
 	bAutoDelete_ = false;
 }
 Stage_MainScene::~Stage_MainScene() {
+	auto primaryScene = manager_->GetPrimaryScene();
+	primaryScene->AddTask(new UtilTask_FadeBGM(primaryScene.get(), bgmBoss_, 60,
+		bgmBoss_->GetData()->GetVolumeRate()));
 }
 
 void Stage_MainScene::Render() {
@@ -402,5 +414,41 @@ void Stage_MainScene::Update() {
 		this->AddTask(pBossTask);
 	}
 
+	static bool bTriggerOnce = true;
+	if (bTriggerOnce && pTaskPlayer_->GetPlayerState() == Stage_PlayerTask::State::End) {
+		class Delay : public TaskBase {
+		public:
+			Delay(Scene* parent) : TaskBase(parent) { frameEnd_ = 150; }
+			~Delay() {
+				SceneManager* manager = parent_->GetParentManager();
+				auto pause = (Pause_MainScene*)(manager->GetScene(Scene::Pause).get());
+				pause->EnterPause(1);
+			}
+			virtual void Update() { ++frame_; }
+		};
+		this->AddTask(new Delay(this));
+		bTriggerOnce = false;
+	}
+
+	{
+		static size_t pauseDelay = 0;
+
+		GET_INSTANCE(InputManager, inputManager);
+		if (pauseDelay == 0 && inputManager->GetKeyState(VirtualKey::Pause) == KeyState::Push) {
+			auto pause = (Pause_MainScene*)(manager_->GetScene(Scene::Pause).get());
+			pause->EnterPause(0);
+
+			pauseDelay = 6;
+			return;
+		}
+
+		if (pauseDelay > 0) --pauseDelay;
+	}
+
 	Scene::Update();
+}
+
+void Stage_MainScene::CloseStage() {
+	auto pause = (Pause_MainScene*)(manager_->GetScene(Scene::Pause).get());
+	pause->EnterPause(2);
 }

@@ -27,8 +27,9 @@ void SceneManager::Render() {
 	primaryScene_->Render();
 
 	for (shared_ptr<Scene>& iScene : listScene_) {
-		if (iScene)
-			iScene->Render();
+		if (iScene && !iScene->IsToBeDeleted()) {
+			if (iScene->bEnableRender_) iScene->Render();
+		}
 	}
 
 	rearScene_->Render();
@@ -38,8 +39,8 @@ void SceneManager::Update() {
 
 	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene) {
-			iScene->Update();
-			if (iScene->IsAutoDelete() && iScene->GetTaskCount() == 0)
+			if (iScene->bEnableUpdate_) iScene->Update();
+			if (iScene->IsToBeDeleted())
 				iScene = nullptr;
 		}
 	}
@@ -54,12 +55,20 @@ void SceneManager::AddScene(shared_ptr<Scene> ptrScene, size_t indexScene, bool 
 	listScene_[indexScene] = ptrScene;
 }
 void SceneManager::RemoveScene(size_t indexScene) {
-	listScene_[indexScene] = nullptr;
+	shared_ptr<Scene>& pScene = listScene_[indexScene];
+	if (pScene == nullptr) return;
+	pScene->bDelete_ = true;
+	pScene->bEnableRender_ = false;
+	pScene->bEnableUpdate_ = false;
+	//pScene = nullptr;
 }
 void SceneManager::RemoveScene(Scene* ptrScene) {
 	for (shared_ptr<Scene>& iScene : listScene_) {
 		if (iScene.get() == ptrScene) {
-			iScene = nullptr;
+			iScene->bDelete_ = true;
+			iScene->bEnableRender_ = false;
+			iScene->bEnableUpdate_ = false;
+			//iScene = nullptr;
 			return;
 		}
 	}
@@ -87,7 +96,6 @@ Scene::Scene(SceneManager* manager) {
 Scene::~Scene() {
 }
 void Scene::Render() {
-	if (!bEnableRender_) return;
 	for (byte iLayer = 0; iLayer < MAX_RENDER_LAYER; ++iLayer) {
 		for (shared_ptr<TaskBase>& iTask : listTask_) {
 			if (iTask && !iTask->IsFinished())
@@ -96,7 +104,6 @@ void Scene::Render() {
 	}
 }
 void Scene::Update() {
-	if (!bEnableUpdate_) return;
 	for (auto itr = listTask_.begin(); itr != listTask_.end();) {
 		shared_ptr<TaskBase> task = *itr;
 		if (task && !task->IsFinished()) {

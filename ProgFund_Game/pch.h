@@ -2,7 +2,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-//windows
+//---------------------------------------------------------
+//Windows
 
 #define _WIN32_WINNT _WIN32_WINNT_WIN7		//Minimum support -> Windows 7
 #define WINVER _WIN32_WINNT
@@ -11,12 +12,14 @@
 
 #pragma comment(lib, "winmm.lib")
 
+//---------------------------------------------------------
 //xmm
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
 #include <immintrin.h>
 
+//---------------------------------------------------------
 //C++ STL
 
 #include <cmath>
@@ -55,6 +58,7 @@
 
 #pragma warning(disable : 28251)	//Inconsistent annotation
 
+//---------------------------------------------------------
 //DirectX
 
 //#define D3D_DEBUG_INFO
@@ -85,6 +89,7 @@
 #pragma comment(lib, "d3dx9.lib")
 #endif
 
+//---------------------------------------------------------
 //Others
 
 #include <ogg/ogg.h>

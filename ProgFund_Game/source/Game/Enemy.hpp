@@ -28,7 +28,7 @@ public:
 	virtual void Render(byte layer) {}
 	virtual void Update() {}
 
-	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget);
+	virtual void Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget);
 
 	void AddLife(double delta) { life_ += delta; }
 };

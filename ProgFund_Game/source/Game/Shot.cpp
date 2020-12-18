@@ -923,19 +923,21 @@ void Stage_ObjShot::_RegistIntersection() {
 	}
 }
 
-void Stage_ObjShot::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget) {
+void Stage_ObjShot::Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget) {
 	shared_ptr<Stage_ObjCollision> pOther = otherTarget->GetParent().lock();
 
 	switch (otherTarget->GetTargetType()) {
 	case Stage_IntersectionTarget::TypeTarget::Player:
-		if (auto pTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(otherTarget.get())) {
-			auto objPlayer = dynamic_cast<Stage_PlayerTask*>(pTarget->GetParent().lock().get());
+		if (auto pTarget = dynamic_cast<Stage_IntersectionTarget_Player*>(otherTarget)) {
+			auto stage = (Stage_MainScene*)shotManager_->GetParent();
+			auto player = stage->GetPlayer();
+
 			if (pTarget->IsGraze()) {
-				if (polarity_ == objPlayer->GetPolarity())
+				if (polarity_ == player->GetPolarity())
 					frameFadeDelete_ = FADE_MAX;
 			}
 			else {
-				if (polarity_ != objPlayer->GetPolarity())
+				if (polarity_ != player->GetPolarity())
 					life_ = 0;
 			}
 		}
@@ -943,8 +945,15 @@ void Stage_ObjShot::Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, sh
 	case Stage_IntersectionTarget::TypeTarget::PlayerSpell:
 		break;
 	case Stage_IntersectionTarget::TypeTarget::EnemyToPlayerShot:
+	{
+		auto stage = (Stage_MainScene*)shotManager_->GetParent();
+		auto player = stage->GetPlayer();
+
+		player->AddScore(5);
+
 		life_ -= 1;
 		break;
+	}
 	}
 }
 

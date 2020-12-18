@@ -202,8 +202,10 @@
     <ClCompile Include="source\Game\Intersection.cpp" />
     <ClCompile Include="source\Game\Menu.cpp" />
     <ClCompile Include="source\Game\ObjMove.cpp" />
+    <ClCompile Include="source\Game\Pause.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\Game\Shot.cpp" />
+    <ClCompile Include="source\Game\SoundLib.cpp" />
     <ClCompile Include="source\Game\StageMain.cpp" />
     <ClCompile Include="source\Game\Stage\Background1.cpp" />
     <ClCompile Include="source\Game\Stage\BossMain.cpp" />
@@ -229,8 +231,11 @@
     <ClInclude Include="source\Game\Intersection.hpp" />
     <ClInclude Include="source\Game\Menu.hpp" />
     <ClInclude Include="source\Game\ObjMove.hpp" />
+    <ClInclude Include="source\Game\Pause.hpp" />
     <ClInclude Include="source\Game\Player.hpp" />
+    <ClInclude Include="source\Game\Score.hpp" />
     <ClInclude Include="source\Game\Shot.hpp" />
+    <ClInclude Include="source\Game\SoundLib.hpp" />
     <ClInclude Include="source\Game\StageMain.hpp" />
     <ClInclude Include="source\Game\Stage\Background1.hpp" />
     <ClInclude Include="source\Game\Stage\BossMain.hpp" />

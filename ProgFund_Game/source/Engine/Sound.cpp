@@ -96,6 +96,7 @@ bool DxSoundSource::Play() {
 	if (bPlaying_ || pSoundBuffer_ == nullptr)
 		return false;
 
+	Seek(0);
 	pSoundBuffer_->Play(0, 0, bLoopEnable_ ? DSBPLAY_LOOPING : 0);
 
 	return true;
@@ -274,6 +275,7 @@ bool DxSoundSourceStreamer::Play() {
 			_StreamingTimerCallback, (PVOID)this,
 			300, 100, WT_EXECUTEDEFAULT);
 	}
+	//Stop();
 	pSoundBuffer_->Play(0, 0, (bUseStreaming_ || bLoopEnable_) ? DSBPLAY_LOOPING : 0);
 
 	return true;
@@ -352,7 +354,7 @@ bool DxSoundSourceWave::_CreateBuffer() {
 		file_->read((char*)&sizeChunk, sizeof(uint32_t));
 		file_->read((char*)&formatWave_, sizeChunk);
 
-		if (sizeChunk < sizeof(WAVEFORMATEX) || formatWave_.wFormatTag != WAVE_FORMAT_PCM)
+		if (sizeChunk < sizeof(WAVEFORMATEX) - 2 || formatWave_.wFormatTag != WAVE_FORMAT_PCM)
 			throw EngineError("unsupported wave format");
 
 		file_->seekg(dataChunkOffset);
@@ -502,6 +504,7 @@ size_t DxSoundSourceStreamerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	while (bytesWritten < dwSize) {
 		size_t writeRemain = dwSize - bytesWritten;
 
+		/*
 		if (byteLoopEnd > 0 && readHead + writeRemain > byteLoopEnd) {	//We're looping
 			size_t loopRemainByte = byteLoopEnd - readHead;
 
@@ -531,15 +534,17 @@ size_t DxSoundSourceStreamerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 				break;
 			}
 		}
-		else {		//Copy stream as normal
+		else
+		*/
+		{		//Copy stream as normal
 			size_t thisRead = ov_read(&fileOgg_, (char*)pMem + bytesWritten, writeRemain, 0, 2, 1, nullptr);
 			bytesWritten += thisRead;
 			readHead += thisRead;
 
 			if (thisRead == 0) {		//EOF
 				if (bLoopEnable_) {
-					Seek(sampleLoopStart_);
-					readHead = sampleLoopStart_ * formatWave_.nBlockAlign;
+					Seek(0);
+					readHead = 0;
 				}
 				else {
 					Stop();

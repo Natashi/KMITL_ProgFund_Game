@@ -1,5 +1,8 @@
 #include "pch.h"
+
 #include "Menu.hpp"
+
+#include "Pause.hpp"
 #include "StageMain.hpp"
 
 //*******************************************************************
@@ -100,7 +103,7 @@ void Menu_SplashTask::Update() {
 namespace MenuParams {
 	static constexpr size_t MAIN_ITEMS = 3;
 	static constexpr size_t MAIN_INDEX_START = 0;
-	static constexpr size_t MAIN_INDEX_OPTIONS = 1;
+	static constexpr size_t MAIN_INDEX_SCORE = 1;
 	static constexpr size_t MAIN_INDEX_QUIT = 2;
 };
 
@@ -180,7 +183,7 @@ Menu_Child_ParentMenu::Menu_Child_ParentMenu(Menu_MainScene* parent) : TaskBase(
 	selectIndex_ = 0;
 	{
 		listMenuObj_.resize(MenuParams::MAIN_ITEMS);
-		size_t imgIds[] = { 0, 6, 8 };
+		size_t imgIds[] = { 0, 4, 8 };
 		for (int i = 0; i < MenuParams::MAIN_ITEMS; ++i) {
 			Menu_Child_ParentMenu_Item* item = new Menu_Child_ParentMenu_Item(parent,
 				D3DXVECTOR2(48, 286 + i * 64), i, imgIds[i] * 2);
@@ -200,36 +203,43 @@ void Menu_Child_ParentMenu::Render(byte layer) {
 		ptr->Render();
 }
 void Menu_Child_ParentMenu::Update() {
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
 	GET_INSTANCE(InputManager, inputManager);
 	if (flgGetInput_ && frame_ > 20) {
 		if (inputManager->GetKeyState(VirtualKey::Down) == KeyState::Push) {
 			++selectIndex_;
 			if (selectIndex_ >= MenuParams::MAIN_ITEMS)
 				selectIndex_ = 0;
+			soundLib->PlaySE("Select");
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Up) == KeyState::Push) {
 			--selectIndex_;
 			if (selectIndex_ < 0)
 				selectIndex_ = MenuParams::MAIN_ITEMS - 1;
+			soundLib->PlaySE("Select");
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Ok) == KeyState::Push) {
 			switch (selectIndex_) {
 			case MenuParams::MAIN_INDEX_START:
 			{
+				soundLib->PlaySE("Ok");
 				parent_->AddTask(new Menu_Child_RankMenu((Menu_MainScene*)parent_));
+				frameEnd_ = 0;
 				break;
 			}
-			case MenuParams::MAIN_INDEX_OPTIONS:
+			case MenuParams::MAIN_INDEX_SCORE:
 			{
+				soundLib->PlaySE("Ok");
+				parent_->AddTask(new Menu_PlayerDataTask((Menu_MainScene*)parent_));
+				frameEnd_ = 0;
 				break;
 			}
 			case MenuParams::MAIN_INDEX_QUIT:
 			{
+				frameEnd_ = 0;
 				break;
 			}
 			}
-
-			frameEnd_ = 0;
 		}
 	}
 	else {		//Wait until the user releases the Z key from the previous menu
@@ -324,29 +334,39 @@ void Menu_Child_RankMenu::Render(byte layer) {
 		ptr->Render();
 }
 void Menu_Child_RankMenu::Update() {
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
 	GET_INSTANCE(InputManager, inputManager);
 	if (flgGetInput_ && frame_ > 20 && frameEnd_ == UINT_MAX) {
 		if (inputManager->GetKeyState(VirtualKey::Down) == KeyState::Push) {
+			soundLib->PlaySE("Select");
 			selectIndex_ += 2;
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Up) == KeyState::Push) {
+			soundLib->PlaySE("Select");
 			selectIndex_ -= 2;
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Left) == KeyState::Push) {
+			soundLib->PlaySE("Select");
 			selectIndex_ = selectIndex_ < 2 ? (1 - selectIndex_) : (5 - selectIndex_);
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Right) == KeyState::Push) {
+			soundLib->PlaySE("Select");
 			selectIndex_ = selectIndex_ < 2 ? (1 - selectIndex_) : (5 - selectIndex_);
 		}
 		else if (inputManager->GetKeyState(VirtualKey::Ok) == KeyState::Push) {
 			GET_INSTANCE(CommonDataManager, dataManager);
 			dataManager->SetValue("GameRank", selectIndex_);
 
+			soundLib->PlaySE("boon1");
+
 			frameEnd_ = frame_ + 40;
 
 			{
 				auto primaryScene = parent_->GetParentManager()->GetPrimaryScene().get();
 				auto rearScene = parent_->GetParentManager()->GetRearScene().get();
+
+				shared_ptr<Pause_MainScene> pauseScene(new Pause_MainScene(parent_->GetParentManager()));
+				parent_->GetParentManager()->AddScene(pauseScene, Scene::Type::Pause);
 
 				primaryScene->AddTask(new Stage_SceneLoader(primaryScene));
 				rearScene->AddTask(new UtilTask_ColorFade(rearScene, 30, 30, 70, D3DCOLOR_XRGB(0, 0, 0)));
@@ -355,6 +375,8 @@ void Menu_Child_RankMenu::Update() {
 		else if (inputManager->GetKeyState(VirtualKey::Cancel) == KeyState::Push) {
 			GET_INSTANCE(CommonDataManager, dataManager);
 			dataManager->SetValue("GameRank", selectIndex_);
+
+			soundLib->PlaySE("Cancel");
 
 			frameEnd_ = 0;
 
@@ -376,9 +398,181 @@ void Menu_Child_RankMenu::Update() {
 }
 
 //*******************************************************************
-//Menu_MainTask
+//Menu_PlayerDataTask
+//*******************************************************************
+Menu_PlayerDataTask::Menu_PlayerDataTask(Scene* parent) : TaskBase(parent) {
+	GET_INSTANCE(ResourceManager, resourceManager);
+	auto textureAscii = resourceManager->GetResourceAs<TextureResource>("img/system/ascii.png");
+
+	PlayerDataUtil::LoadPlayerData(&mapScore);
+	/*
+	for (int i = 0; i < 5; ++i) {
+		int ii = i + 1;
+		mapScore.insert(std::make_pair(ii * 1000000,
+			PlayerDataUtil::ScorePair("Reimu", { (uint64_t)(ii * 1000000), (uint32_t)(ii * 1000), (uint32_t)(ii * 100) })));
+	}
+	*/
+
+	{
+		VertexTLX verts[4];
+		std::vector<VertexTLX> vertex;
+		std::vector<uint16_t> index;
+
+		{
+			std::string displayText =
+				"    Name          Score        Total Absorbs    Highest Chain";
+
+			{
+				DxRectangle<float> rcBaseDst(-8, -8, 8, 8);
+				DxRectangle<float> dstOff;
+				for (size_t iChar = 0; iChar < displayText.size(); ++iChar) {
+					{
+						uint16_t bii = iChar * 4;
+						index.push_back(bii + 0);
+						index.push_back(bii + 1);
+						index.push_back(bii + 2);
+						index.push_back(bii + 2);
+						index.push_back(bii + 1);
+						index.push_back(bii + 3);
+					}
+
+					{
+						SystemUtility::SetVertexAsciiSingle(verts, displayText[iChar],
+							rcBaseDst + dstOff, D3DXVECTOR2(14, 14), D3DXVECTOR2(256, 256));
+						for (int i = 0; i < 4; ++i)
+							verts[i].diffuse = D3DCOLOR_XRGB(199, 255, 232);
+						{
+							vertex.push_back(verts[0]);
+							vertex.push_back(verts[1]);
+							vertex.push_back(verts[2]);
+							vertex.push_back(verts[3]);
+						}
+					}
+
+					dstOff += DxRectangle<float>::SetFromSize(9, 0);
+				}
+
+				objHeader_.SetTexture(textureAscii);
+
+				objHeader_.SetArrayVertex(vertex);
+				objHeader_.SetArrayIndex(index);
+
+				objHeader_.SetPosition(52, 108, 1);
+			}
+		}
+
+		{
+			size_t _i = 0;
+			int y = 32;
+			for (auto& iEntry : mapScore) {
+				vertex.clear();
+				index.clear();
+
+				std::string displayText;
+				displayText += StringUtility::Format("%u.  ", _i + 1);
+				displayText += StringUtility::Format("%-8s    ", iEntry.second.first.c_str());
+				displayText += StringUtility::Format("%-9s   ", std::to_string(iEntry.second.second.score).c_str());
+				displayText += StringUtility::Format("%-5s          ",
+					std::to_string(std::min<uint32_t>(iEntry.second.second.totalAbsorb, 99999)).c_str());
+				displayText += StringUtility::Format("%-5s",
+					std::to_string(std::min<uint32_t>(iEntry.second.second.maxAbsorb, 99999)).c_str());
+
+				{
+					shared_ptr<StaticRenderObject2D> text(new StaticRenderObject2D());
+					text->SetTexture(textureAscii);
+
+					DxRectangle<float> rcBaseDst(-8, -8, 8, 8);
+					DxRectangle<float> dstOff = DxRectangle<float>::SetFromSize(0, y);
+					for (size_t iChar = 0; iChar < displayText.size(); ++iChar) {
+						{
+							uint16_t bii = iChar * 4;
+							index.push_back(bii + 0);
+							index.push_back(bii + 1);
+							index.push_back(bii + 2);
+							index.push_back(bii + 2);
+							index.push_back(bii + 1);
+							index.push_back(bii + 3);
+						}
+
+						{
+							SystemUtility::SetVertexAsciiSingle(verts, displayText[iChar],
+								rcBaseDst + dstOff, D3DXVECTOR2(14, 14), D3DXVECTOR2(256, 256));
+							for (int i = 0; i < 4; ++i)
+								verts[i].diffuse = 0xffffffff;
+							{
+								vertex.push_back(verts[0]);
+								vertex.push_back(verts[1]);
+								vertex.push_back(verts[2]);
+								vertex.push_back(verts[3]);
+							}
+						}
+
+						dstOff += DxRectangle<float>::SetFromSize(10, 0);
+					}
+
+					text->SetArrayVertex(vertex);
+					text->SetArrayIndex(index);
+
+					text->SetPosition(52, 108 + y, 1);
+
+					listData_.push_back(text);
+				}
+
+				y += 24;
+				++_i;
+				if (_i >= PlayerDataUtil::MAX_ENTRY) break;
+			}
+		}
+	}
+}
+
+void Menu_PlayerDataTask::Render(byte layer) {
+	if (layer != 1) return;
+	objHeader_.Render();
+	for (auto& obj : listData_)
+		obj->Render();
+}
+void Menu_PlayerDataTask::Update() {
+	GET_INSTANCE(ScriptSoundLibrary, soundLib);
+	GET_INSTANCE(InputManager, inputManager);
+	if (frame_ > 20 && frameEnd_ == UINT_MAX) {
+		if (inputManager->GetKeyState(VirtualKey::Cancel) == KeyState::Push ||
+			inputManager->GetKeyState(VirtualKey::Pause) == KeyState::Push) {
+			soundLib->PlaySE("Cancel");
+
+			frame_ = 0;
+			frameEnd_ = 12;
+
+			parent_->AddTask(new Menu_Child_ParentMenu((Menu_MainScene*)parent_));
+		}
+	}
+
+	{
+		if (frameEnd_ != UINT_MAX) {
+			double tmp = frame_ / 12.0;
+			tScale_ = Math::Lerp::Smooth<double>(1, 0, tmp);
+		}
+		else if (frame_ < 16) {
+			double tmp = frame_ / 15.0;
+			tScale_ = Math::Lerp::Smooth<double>(0, 1, tmp);
+		}
+
+		objHeader_.SetScaleY(tScale_);
+		for (auto& obj : listData_)
+			obj->SetScaleY(tScale_);
+	}
+
+	++frame_;
+}
+
+//*******************************************************************
+//Menu_MainScene
 //*******************************************************************
 Menu_MainScene::Menu_MainScene(SceneManager* manager) : Scene(manager) {
+	{
+		//manager->RemoveScene(Scene::Type::Pause);
+	}
+
 	GET_INSTANCE(ResourceManager, resourceManager);
 	resourceManager->LoadResource<TextureResource>(
 		"resource/img/menu/title_item00.png", "img/menu/title_item00.png");
@@ -386,8 +580,9 @@ Menu_MainScene::Menu_MainScene(SceneManager* manager) : Scene(manager) {
 	{
 		musicBackground_ = resourceManager->LoadResource<SoundResource>(
 			"resource/sound/music/title.ogg", "sound/music/title.ogg");
+		//musicBackground_->GetData()->SetLoop(true, 0, 13857700);
 		musicBackground_->GetData()->Play();
-		musicBackground_->GetData()->SetVolumeRate(70);
+		musicBackground_->GetData()->SetVolumeRate(100);
 	}
 
 	{

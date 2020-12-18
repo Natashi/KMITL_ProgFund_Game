@@ -87,7 +87,7 @@ public:
 		AddTarget(target->GetTargetType(), target);
 	}
 
-	static bool IsIntersected(shared_ptr<Stage_IntersectionTarget>& target1, shared_ptr<Stage_IntersectionTarget>& target2);
+	static bool IsIntersected(Stage_IntersectionTarget* target1, Stage_IntersectionTarget* target2);
 };
 
 class Stage_IntersectionSpace {
@@ -98,7 +98,7 @@ public:
 		TYPE_B = 1,
 	};
 	typedef std::vector<shared_ptr<Stage_IntersectionTarget>> ListTarget;
-	typedef std::pair<shared_ptr<Stage_IntersectionTarget>, shared_ptr<Stage_IntersectionTarget>> TargetCheckListPair;
+	typedef std::pair<Stage_IntersectionTarget*, Stage_IntersectionTarget*> TargetCheckListPair;
 protected:
 	std::pair<ListTarget, ListTarget> pairTargetList_;
 	DxRectangle<int> spaceRect_;
@@ -132,7 +132,7 @@ protected:
 public:
 	Stage_ObjCollision() { ClearIntersected(); }
 
-	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget) = 0;
+	virtual void Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget) = 0;
 
 	void ClearIntersected() { bIntersected_ = false; intersectedCount_ = 0; }
 	bool IsIntersected() { return bIntersected_; }

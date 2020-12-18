@@ -262,7 +262,7 @@ public:
 	void SetAngleZOff(double z) { shotAngleZ_ = z; }
 
 	//bool CanIntersect() { return bIntersectionEnable_; }
-	virtual void Intersect(shared_ptr<Stage_IntersectionTarget> ownTarget, shared_ptr<Stage_IntersectionTarget> otherTarget);
+	virtual void Intersect(Stage_IntersectionTarget* ownTarget, Stage_IntersectionTarget* otherTarget);
 };
 
 //--------------------------------------------------------------------------
