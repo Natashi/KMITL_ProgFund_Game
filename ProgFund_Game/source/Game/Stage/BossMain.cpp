@@ -225,10 +225,6 @@ public:
 		objEnemy->SetY(-999);
 		objEnemy->rateShotDamage_ = 0;
 	}
-	~Shinki_Non1() {
-		GET_INSTANCE(ScriptSoundLibrary, soundLib);
-		soundLib->PlaySE("enemydown");
-	}
 
 	virtual void Activate() {
 		Stage_EnemyPhase::Activate();
@@ -242,6 +238,10 @@ public:
 
 			parentEnemy_->SetPattern(shared_ptr<Stage_MovePatternLine_Frame>(move));
 		}
+	}
+	virtual void Finalize() {
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Update() {
@@ -415,8 +415,8 @@ private:
 		double radius_;
 		Sprite2D objCircle_;
 	public:
-		_OrbFamiliar(Scene* parent, Stage_ObjMove* moveParent, bool bWhite, 
-			double iniAngle, double dir) : TaskBase(parent)
+		_OrbFamiliar(Scene* parent, Stage_ObjMove* moveParent, bool bWhite,
+			double iniAngle, double dir) : TaskBase(parent) 
 		{
 			objMoveParent_ = moveParent;
 			bEnd_ = false;
@@ -516,23 +516,11 @@ private:
 public:
 	Shinki_Spell1(Scene* parent, Stage_EnemyTask_Scripted* objEnemy) : Stage_EnemyPhase(parent, objEnemy) {
 		timerDelay_ = 180;
-		timerMax_ = timer_ = 46 * 60;
-		lifeMax_ = 6000;
+		timerMax_ = timer_ = 50 * 60;
+		lifeMax_ = 8500;
 
 		step_ = 0;
 		tmp_[0] = 1;
-	}
-	~Shinki_Spell1() {
-		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
-		objBoss->SetSpellBackground(false);
-
-		for (auto& iObj : listTaskOrbs_)
-			iObj->bEnd_ = true;
-
-		g_spellBonusWait->End(this);
-
-		GET_INSTANCE(ScriptSoundLibrary, soundLib);
-		soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Activate() {
@@ -547,6 +535,18 @@ public:
 		parentEnemy_->rateShotDamage_ = 0;
 
 		g_spellBonusWait->Begin(this, 300000);
+	}
+	virtual void Finalize() {
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		objBoss->SetSpellBackground(false);
+
+		for (auto& iObj : listTaskOrbs_)
+			iObj->bEnd_ = true;
+
+		g_spellBonusWait->End(this);
+
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Update() {
@@ -631,8 +631,11 @@ public:
 			}
 
 			if (eFrame > 0 && eFrame % 50 == 0 && eFrame <= 250) {
+				float rx = 0;
+				while (abs(rx) < 24)
+					rx = rand->GetReal(-60, 60);
 				Stage_MovePatternLine_Frame* move = new Stage_MovePatternLine_Frame(parentEnemy_);
-				move->SetAtFrame(320 + rand->GetReal(-140, 140), rand->GetReal(64, 144), 49, Math::Lerp::MODE_DECELERATE);
+				move->SetAtFrame(parentEnemy_->posX_ + rx, rand->GetReal(64, 144), 49, Math::Lerp::MODE_DECELERATE);
 				parentEnemy_->SetPattern(move);
 			}
 			if (eFrame == 250 + 60) {
@@ -651,21 +654,21 @@ public:
 		case 2:
 		{
 			size_t eFrame = frame_ - 1;
-			if (eFrame % 40 == 0 && eFrame <= 40 * 10) {
-				double angleToPlayer = objBoss->GetDeltaAngle(stage->GetPlayer().get()) + GM_DTORA(rand->GetReal(-3, 3));
+			if (eFrame % 30 == 0 && eFrame <= 30 * 7) {
+				double angleToPlayer = objBoss->GetDeltaAngle(stage->GetPlayer().get()) + GM_DTORA(rand->GetReal(-5, 5));
 
 				bool bWhite = rand->GetInt() % 2 == 0;
-				for (int i = -5; i < 6; ++i) {
+				for (int i = -6; i < 7; ++i) {
 					shotManager->AddEnemyShot(objBoss->GetMovePosition(), 1.9, 
-						angleToPlayer + i * GM_DTORA(6),
+						angleToPlayer + i * GM_DTORA(7),
 						bWhite ? ShotConst::WhiteBallL : RedBallL, 16,
 						bWhite ? IntersectPolarity::White : IntersectPolarity::Black);
 				}
 
-				soundLib->PlaySE("shot3", 80);
+				soundLib->PlaySE("shot3", 70);
 			}
 
-			if (eFrame == 40 * 10 + 160) {
+			if (eFrame == 30 * 7 + 120) {
 				step_ = 1;
 				frame_ = 0;
 			}
@@ -689,26 +692,12 @@ public:
 
 		timerDelay_ = 180;
 		timerMax_ = timer_ = 60 * 60;
-		lifeMax_ = 5500;
+		lifeMax_ = 7500;
 
 		step_ = 0;
 		tmp_[0] = rand->GetReal(0, GM_PI_X2);
 		tmp_[1] = SystemUtility::RandDirection();
 		tmp_[2] = SystemUtility::RandDirection();
-	}
-	~Shinki_Spell2() {
-		Stage_MainScene* stage = (Stage_MainScene*)parent_;
-		//shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
-		//shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
-
-		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
-		objBoss->SetSpellBackground(false);
-		objBoss->SetChargeDuration(0);
-
-		g_spellBonusWait->End(this);
-
-		GET_INSTANCE(ScriptSoundLibrary, soundLib);
-		//soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Activate() {
@@ -723,6 +712,20 @@ public:
 		parentEnemy_->rateShotDamage_ = 0;
 
 		g_spellBonusWait->Begin(this, 500000);
+	}
+	virtual void Finalize() {
+		Stage_MainScene* stage = (Stage_MainScene*)parent_;
+		//shared_ptr<Stage_ShotManager> shotManager = stage->GetShotManager();
+		//shotManager->DeleteInCircle(ShotOwnerType::Enemy, 320, 240, 1000, true);
+
+		EnemyBoss_Shinki* objBoss = (EnemyBoss_Shinki*)parentEnemy_;
+		objBoss->SetSpellBackground(false);
+		objBoss->SetChargeDuration(0);
+
+		g_spellBonusWait->End(this);
+
+		GET_INSTANCE(ScriptSoundLibrary, soundLib);
+		//soundLib->PlaySE("enemydown");
 	}
 
 	virtual void Update() {
@@ -785,9 +788,9 @@ public:
 				if (eFrame >= 40 + 90 && (eFrame - 130) % 60 == 0) {
 					double iniAngle = rand->GetReal(0, GM_PI_X2);
 
-					for (int i = 0; i < 24; ++i) {
+					for (int i = 0; i < 30; ++i) {
 						bool bPolar = rand->GetInt() % 2 == 0;
-						double sa = iniAngle + GM_PI_X2 / 24 * i;
+						double sa = iniAngle + GM_PI_X2 / 30 * i;
 						auto shot = shotManager->AddEnemyShot(OffsetPos(parentEnemy_->GetMovePosition(), sa, -64),
 							4, sa,
 							bPolar ? ShotConst::RedRingBallM : ShotConst::WhiteRingBallM, 16,

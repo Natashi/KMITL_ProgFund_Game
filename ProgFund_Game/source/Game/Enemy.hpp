@@ -48,6 +48,7 @@ public:
 	Stage_EnemyPhase(Scene* parent, Stage_EnemyTask_Scripted* objEnemy);
 
 	virtual void Activate();
+	virtual void Finalize();
 
 	virtual void Render(byte layer) {}
 	virtual void Update();

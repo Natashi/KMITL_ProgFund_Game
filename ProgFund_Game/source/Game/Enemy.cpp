@@ -56,6 +56,8 @@ void Stage_EnemyPhase::Activate() {
 	if (parentEnemy_)
 		parentEnemy_->life_ = lifeMax_;
 }
+void Stage_EnemyPhase::Finalize() {
+}
 
 void Stage_EnemyPhase::Update() {
 	if (parentEnemy_)
@@ -78,6 +80,8 @@ Stage_EnemyTask_Scripted::Stage_EnemyTask_Scripted(Scene* parent) : Stage_EnemyT
 
 void Stage_EnemyTask_Scripted::Update() {
 	if (currentPhase_ == nullptr || currentPhase_->IsFinished()) {
+		if (currentPhase_)
+			currentPhase_->Finalize();
 		currentPhase_ = nullptr;
 		_RunNextPhase();
 	}
