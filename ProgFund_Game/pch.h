@@ -100,8 +100,6 @@
 #pragma comment(lib, "vorbis_static.lib")
 #pragma comment(lib, "vorbisfile_static.lib")
 
-#pragma comment(lib, "freetype.lib")
-
 //---------------------------------------------------------
 
 namespace stdch = std::chrono;
