@@ -36,9 +36,9 @@ public:
 	static constexpr const int BARRIER_SIZE_MIN = 24;	//Absorption barrier radius during post-death recovery
 
 	static constexpr const int POLARITY_SWITCH_TIME = 20;		//Time for polarity scale to go from -POLARITY_SWITCH to 1.0
-	static constexpr const double POLARITY_ABSORBING = 0.3;		//Min. polarity scale to start absorbing bullets
+	static constexpr const double POLARITY_ABSORBING = 0.25;	//Min. polarity scale to start absorbing bullets
 	static constexpr const double POLARITY_SWITCH = 0.15;		//Polarity scale becomes -POLARITY_SWITCH after switching
-	static constexpr const int POLARITY_COOLDOWN_FRAME = 15;	//Switch cooldown
+	static constexpr const int POLARITY_COOLDOWN_FRAME = 12;	//Switch cooldown
 	static constexpr const double POLARITY_INC_STEP = (1 + POLARITY_SWITCH) / (double)(POLARITY_SWITCH_TIME);
 	static constexpr const double POLARITY_COOLDOWN = POLARITY_INC_STEP * POLARITY_COOLDOWN_FRAME;
 public:
