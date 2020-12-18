@@ -43,7 +43,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		printf("Initialized application.\n");
 
 		{
-			if (false) {
+			if (true) {
 				shared_ptr<Menu_SplashScene> menuScene(new Menu_SplashScene(sceneManager));
 				menuScene->SetType(Scene::Type::Menu);
 				sceneManager->AddScene(menuScene, Scene::Type::Menu);
@@ -130,7 +130,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 							accum_update = 0;
 
 							//if (!sceneManager->IsAnyActive())
-								//msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
+							if (valueManager->GetValue("GameEnd") != nullptr)
+								msg.message = WM_QUIT;	//Causes the forefathers of Windows to spin in their grave
 						}
 
 						//2 fps updates per second, hopefully

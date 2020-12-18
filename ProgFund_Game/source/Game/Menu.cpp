@@ -45,7 +45,7 @@ namespace MenuParams {
 
 CONSTRUCT_TASK(Menu_SplashTask) {
 	frameEnd_ = MenuParams::SPLASH_SINGLESEQ + 30;
-	frameOff_ = 20;
+	frameOff_ = 120;
 
 	objSplash_.SetPosition(320, 240, 1);
 }
@@ -236,8 +236,10 @@ void Menu_Child_ParentMenu::Update() {
 			}
 			case MenuParams::MAIN_INDEX_QUIT:
 			{
+				GET_INSTANCE(CommonDataManager, dataManager);
+				dataManager->SetValue("GameEnd", true);
 				frameEnd_ = 0;
-				break;
+				return;
 			}
 			}
 		}

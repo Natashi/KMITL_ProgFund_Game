@@ -273,7 +273,7 @@ bool DxSoundSourceStreamer::Play() {
 		//Create the timer
 		::CreateTimerQueueTimer(&hTimer_, window->GetTimerQueue(),
 			_StreamingTimerCallback, (PVOID)this,
-			300, 100, WT_EXECUTEDEFAULT);
+			300, 50, WT_EXECUTEDEFAULT);
 	}
 	//Stop();
 	pSoundBuffer_->Play(0, 0, (bUseStreaming_ || bLoopEnable_) ? DSBPLAY_LOOPING : 0);
@@ -286,6 +286,7 @@ bool DxSoundSourceStreamer::Pause() {
 }
 bool DxSoundSourceStreamer::Stop() {
 	::SetEvent(hEvent_[2]);
+	hTimer_ = nullptr;
 	pSoundBuffer_->Stop();
 	Seek(0);
 	ResetStreamForSeek();
@@ -503,53 +504,14 @@ size_t DxSoundSourceStreamerOgg::_CopyBuffer(LPVOID pMem, DWORD dwSize) {
 	size_t bytesWritten = 0;
 	while (bytesWritten < dwSize) {
 		size_t writeRemain = dwSize - bytesWritten;
-
-		/*
-		if (byteLoopEnd > 0 && readHead + writeRemain > byteLoopEnd) {	//We're looping
-			size_t loopRemainByte = byteLoopEnd - readHead;
-
-			bool bFileEnd = false;
-			size_t loopRemainWritten = 0;	//Read the remaining bytes in the current loop
-			while (loopRemainWritten < loopRemainByte) {
-				size_t tSize = loopRemainByte - loopRemainWritten;
-				size_t thisRead = ov_read(&fileOgg_, (char*)pMem + bytesWritten + loopRemainWritten, 
-					tSize, 0, 2, 1, nullptr);
-				if (thisRead == 0) {	//EOF
-					bFileEnd = true;
-					break;
-				}
-				loopRemainWritten += thisRead;
-			}
-
-			readHead += loopRemainWritten;
-			if (!bFileEnd)
-				bytesWritten += loopRemainWritten;
-
-			if (bLoopEnable_) {
-				Seek(sampleLoopStart_);
-				readHead = sampleLoopStart_ * formatWave_.nBlockAlign;
-			}
-			else {
-				Stop();
-				break;
-			}
-		}
-		else
-		*/
 		{		//Copy stream as normal
 			size_t thisRead = ov_read(&fileOgg_, (char*)pMem + bytesWritten, writeRemain, 0, 2, 1, nullptr);
 			bytesWritten += thisRead;
 			readHead += thisRead;
 
 			if (thisRead == 0) {		//EOF
-				if (bLoopEnable_) {
-					Seek(0);
-					readHead = 0;
-				}
-				else {
-					Stop();
-					break;
-				}
+				Seek(0);
+				readHead = 0;
 			}
 		}
 	}
